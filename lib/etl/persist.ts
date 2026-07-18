@@ -90,7 +90,7 @@ export function profileToResponse(profile: {
   data: unknown;
   completeness: unknown;
   selectedTemplateId: string;
-  primaryColor: string;
+  primaryColor?: string;
   sourceLocale: string;
   selectedLocale: string;
   version: number;
@@ -102,7 +102,7 @@ export function profileToResponse(profile: {
     data: profile.data,
     completeness: profile.completeness,
     selectedTemplateId: profile.selectedTemplateId,
-    primaryColor: profile.primaryColor,
+    primaryColor: profile.primaryColor ?? "#0f6e56",
     sourceLocale: profile.sourceLocale,
     selectedLocale: profile.selectedLocale,
     version: profile.version,
@@ -112,7 +112,7 @@ export function profileToResponse(profile: {
 
 export function profileListItem(profile: {
   id: string;
-  title: string;
+  title?: string;
   selectedLocale: string;
   selectedTemplateId: string;
   completeness: unknown;
@@ -122,7 +122,7 @@ export function profileListItem(profile: {
   const completeness = profile.completeness as { score?: number } | null;
   return {
     id: profile.id,
-    title: profile.title,
+    title: profile.title ?? "Untitled resume",
     selectedLocale: profile.selectedLocale,
     selectedTemplateId: profile.selectedTemplateId,
     completenessScore:

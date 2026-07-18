@@ -1,7 +1,8 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import type { MasterResume } from "@/lib/resume/schema";
+import type { MasterResume, ResumePatch } from "@/lib/resume/schema";
 import { masterResumeSchema } from "@/lib/resume/schema";
+import { applyConfirmedPatch } from "@/lib/resume/merge";
 import {
   applySourceDiffToLocale,
   translateMasterResume,
@@ -114,6 +115,56 @@ async function upsertLocalePresentation(params: {
     },
   });
   return masterResumeSchema.parse(presentation.data);
+}
+
+/**
+ * Save a manual edit to a non-source locale presentation.
+ * Does not touch MasterResumeProfile.data. Later source syncs only retranslate
+ * fields that changed in the source, so untouched phrasing overrides survive.
+ */
+export async function saveLocalePresentationEdit(params: {
+  profileId: string;
+  sourceLocale: string;
+  sourceVersion: number;
+  sourceData: MasterResume;
+  locale: string;
+  patch?: ResumePatch;
+  data?: MasterResume;
+}): Promise<{
+  locale: string;
+  sourceVersion: number;
+  data: MasterResume;
+}> {
+  const { locale, sourceLocale, sourceVersion, sourceData } = params;
+  if (locale === sourceLocale) {
+    throw new Error("SOURCE_LOCALE_EDIT");
+  }
+
+  const current = await getOrCreateLocalePresentation({
+    profileId: params.profileId,
+    sourceLocale,
+    sourceVersion,
+    sourceData,
+    locale,
+  });
+
+  let next: MasterResume;
+  if (params.data) {
+    next = masterResumeSchema.parse(params.data);
+  } else if (params.patch) {
+    next = applyConfirmedPatch(current.data, params.patch);
+  } else {
+    throw new Error("PATCH_OR_DATA_REQUIRED");
+  }
+
+  const data = await upsertLocalePresentation({
+    profileId: params.profileId,
+    locale,
+    sourceVersion,
+    data: next,
+  });
+
+  return { locale, sourceVersion, data };
 }
 
 /**
