@@ -1,0 +1,49 @@
+{
+  "name": "ai-resume-builder",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^1.2.22",
+    "@ai-sdk/react": "^1.2.12",
+    "@auth/prisma-adapter": "^2.9.1",
+    "@prisma/client": "^6.10.1",
+    "@radix-ui/react-alert-dialog": "^1.1.19",
+    "@radix-ui/react-dialog": "^1.1.19",
+    "@react-pdf/renderer": "^4.3.0",
+    "@vercel/blob": "^2.6.1",
+    "ai": "^4.3.16",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.525.0",
+    "next": "^15.3.5",
+    "next-auth": "^5.0.0-beta.29",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
+    "tailwind-merge": "^3.3.1",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/postcss": "^4.1.11",
+    "@types/node": "^22.15.32",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "eslint": "^9.30.1",
+    "eslint-config-next": "^15.3.5",
+    "prisma": "^6.10.1",
+    "tailwindcss": "^4.1.11",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts             Account[]
+  sessions             Session[]
+  connectedSources     ConnectedSource[]
+  masterResumeProfiles MasterResumeProfile[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum SourceProvider {
+  github
+  linkedin
+}
+
+enum SourceStatus {
+  connected
+  disconnected
+  error
+}
+
+model ConnectedSource {
+  id             String         @id @default(cuid())
+  userId         String
+  provider       SourceProvider
+  status         SourceStatus   @default(connected)
+  externalHandle String?
+  lastImportAt   DateTime?
+  lastError      String?
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshots SourceSnapshot[]
+
+  @@unique([userId, provider])
+}
+
+model SourceSnapshot {
+  id                String         @id @default(cuid())
+  profileId         String
+  provider          SourceProvider
+  connectedSourceId String?
+  payload           Json
+  normalized        Json?
+  importedAt        DateTime       @default(now())
+
+  profile         MasterResumeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  connectedSource ConnectedSource?    @relation(fields: [connectedSourceId], references: [id], onDelete: SetNull)
+
+  @@index([profileId, importedAt])
+}
+
+model MasterResumeProfile {
+  id                 String   @id @default(cuid())
+  userId             String
+  title              String   @default("Untitled resume")
+  /// Canonical resume in sourceLocale (usually EN). Translations never write here.
+  data               Json
+  completeness       Json
+  selectedTemplateId String   @default("classic")
+  primaryColor       String   @default("#0f6e56")
+  sourceLocale       String   @default("en")
+  selectedLocale     String   @default("en")
+  version            Int      @default(1)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshots           SourceSnapshot[]
+  chatConversation    ChatConversation?
+  localePresentations LocalePresentation[]
+  exportArtifacts     ExportArtifact[]
+  sharedLinks         SharedResumeLink[]
+
+  @@index([userId, updatedAt])
+}
+
+model ChatConversation {
+  id        String   @id @default(cuid())
+  profileId String   @unique
+  status    String   @default("active")
+  messages  Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile MasterResumeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+/// Per-locale translated resume snapshot. One row per (profile, locale).
+/// Updating `ja` never replaces `fr` or MasterResumeProfile.data.
+model LocalePresentation {
+  id            String   @id @default(cuid())
+  profileId     String
+  locale        String
+  data          Json
+  sourceVersion Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  profile MasterResumeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, locale])
+}
+
+enum ExportFormat {
+  pdf
+}
+
+model ExportArtifact {
+  id         String       @id @default(cuid())
+  profileId  String
+  templateId String
+  locale     String
+  format     ExportFormat @default(pdf)
+  storageKey String?
+  createdAt  DateTime     @default(now())
+
+  profile MasterResumeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, createdAt])
+}
+
+enum SharedLinkStatus {
+  active
+  revoked
+}
+
+/// Public share link for a resume snapshot in a specific locale.
+model SharedResumeLink {
+  id            String           @id @default(cuid())
+  profileId     String
+  token         String           @unique
+  locale        String
+  templateId    String
+  primaryColor  String           @default("#0f6e56")
+  /// Frozen resume JSON for this share (locale presentation at create/refresh time)
+  data          Json
+  /// Public Vercel Blob URL for the rendered PDF (null = generate on demand)
+  pdfUrl        String?
+  sourceVersion Int
+  status        SharedLinkStatus @default(active)
+  label         String?
+  viewCount     Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  revokedAt     DateTime?
+
+  profile MasterResumeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, createdAt])
+  @@index([status])
+}

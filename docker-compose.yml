@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: resume
+      POSTGRES_PASSWORD: resume
+      POSTGRES_DB: ai_resume_builder
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

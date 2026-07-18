@@ -1,0 +1,198 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f4ef;
+  --foreground: #1a2332;
+  --card: #ffffff;
+  --muted: #5c6b7a;
+  --accent: #0f6e56;
+  --accent-foreground: #f4fbf8;
+  --border: #d9e0e6;
+  --danger: #b42318;
+  --surface: #eef3f7;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-danger: var(--danger);
+  --color-surface: var(--surface);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, #d7ebe3 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #dde7f2 0%, transparent 50%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Browser print: same geometry as on-screen A4 preview (210mm × 297mm) */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Collapse workspace chrome so the resume is not stuck in a half-width grid column */
+  .resume-workspace-grid {
+    display: block !important;
+    gap: 0 !important;
+  }
+
+  .resume-workspace-panel {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 210mm !important;
+  }
+
+  .resume-print-root {
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    width: 210mm !important;
+  }
+
+  .a4-preview-page-sheet {
+    display: none !important;
+  }
+
+  .a4-preview-stack {
+    gap: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+    width: 210mm !important;
+    max-width: none !important;
+  }
+
+  .a4-preview-viewport,
+  .a4-preview-fit {
+    width: 210mm !important;
+    height: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  .a4-preview-page {
+    box-shadow: none !important;
+    outline: none !important;
+    margin: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    max-width: none !important;
+    overflow: hidden !important;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .a4-preview-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .a4-preview-page-clip {
+    overflow: hidden !important;
+  }
+
+  .a4-preview-content {
+    width: 210mm !important;
+    max-width: none !important;
+  }
+
+  /*
+   * Do NOT use break-inside:avoid on large sections — that reflows print
+   * differently from the clipped on-screen A4 pages. Pagination is owned by
+   * .a4-preview-page overflow clipping (same offsets as the preview).
+   */
+  .resume-section {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .resume-print-scale {
+    transform: none !important;
+  }
+
+  .resume-print-root article {
+    box-shadow: none !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+}
+
+/* On-screen A4 resume pages — always real 210mm width; shell scales to fit */
+.a4-preview-stack {
+  padding-bottom: 0;
+}
+
+.a4-preview-content {
+  width: 210mm;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.a4-fullscreen-preview .a4-preview-viewport,
+.a4-fullscreen-preview .a4-preview-fit {
+  width: 210mm !important;
+  max-width: none !important;
+  margin-inline: auto;
+}
+
+.a4-fullscreen-preview .a4-preview-stack {
+  transform: none !important;
+}
+
+.a4-fullscreen-preview .a4-preview-page {
+  width: 210mm !important;
+  height: 297mm !important;
+  max-width: none !important;
+}
+
+.a4-fullscreen-preview .a4-preview-content {
+  width: 210mm !important;
+  max-width: none !important;
+}
+
+/* Resume theme (scoped via --resume-primary on .resume-print-root) */
+.resume-theme-header {
+  background-color: var(--resume-primary, #0f6e56);
+  color: var(--resume-primary-fg, #f4fbf8);
+}
+
+.resume-theme-heading {
+  color: var(--resume-primary, #0f6e56);
+}
