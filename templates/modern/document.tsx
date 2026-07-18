@@ -1,8 +1,9 @@
 import React from "react";
 import { Document, Page, StyleSheet, Text, View, Image } from "@react-pdf/renderer";
 import type { MasterResume } from "@/lib/resume/schema";
-import { formatSkillWithProficiency } from "@/lib/resume/skill-proficiency";
+import { groupSkillNamesByCategory } from "@/lib/resume/skill-categories";
 import { sectionLabel } from "@/lib/resume/section-labels";
+import { formatIdentityLinksForMeta } from "@/lib/resume/identity-links";
 
 const styles = StyleSheet.create({
   page: { padding: 0, fontSize: 10, fontFamily: "Helvetica", color: "#1a2332" },
@@ -63,7 +64,11 @@ export function ModernDocument({
               <Text style={styles.headline}>{data.identity.headline}</Text>
             ) : null}
             <Text style={styles.meta}>
-              {[data.identity.email, data.identity.location]
+              {[
+                data.identity.email,
+                data.identity.location,
+                ...formatIdentityLinksForMeta(data.identity.links),
+              ]
                 .filter(Boolean)
                 .join(" · ")}
             </Text>
@@ -90,6 +95,20 @@ export function ModernDocument({
                   <Text style={styles.itemTitle}>
                     {exp.title} @ {exp.company}
                   </Text>
+                  {exp.location ? (
+                    <Text style={styles.muted}>{exp.location}</Text>
+                  ) : null}
+                  {[exp.startDate, exp.endDate || (exp.current ? "Present" : "")]
+                    .filter(Boolean).length ? (
+                    <Text style={styles.muted}>
+                      {[
+                        exp.startDate,
+                        exp.endDate || (exp.current ? "Present" : ""),
+                      ]
+                        .filter(Boolean)
+                        .join(" – ")}
+                    </Text>
+                  ) : null}
                   {[...exp.bullets, ...exp.metrics].map((b, i) => (
                     <Text key={i} style={styles.bullet}>
                       • {b}
@@ -115,6 +134,9 @@ export function ModernDocument({
                       {ed.field ? (
                         <Text style={styles.muted}>{ed.field}</Text>
                       ) : null}
+                      {ed.location ? (
+                        <Text style={styles.muted}>{ed.location}</Text>
+                      ) : null}
                       {[ed.startDate, ed.endDate].filter(Boolean).length ? (
                         <Text style={styles.muted}>
                           {[ed.startDate, ed.endDate].filter(Boolean).join(" – ")}
@@ -127,11 +149,44 @@ export function ModernDocument({
             </>
           ) : null}
           <Text style={styles.section}>{sectionLabel("skills", locale)}</Text>
-          {data.skills.map((s) => (
-            <Text key={s.id} style={{ marginTop: 3 }}>
-              {formatSkillWithProficiency(s, locale)}
-            </Text>
-          ))}
+          {Array.from(groupSkillNamesByCategory(data.skills, locale)).map(
+            ([category, names]) => (
+              <Text key={category} style={{ marginTop: 4 }}>
+                <Text style={{ fontFamily: "Helvetica-Bold", color: "#0f6e56" }}>
+                  {category}:{" "}
+                </Text>
+                {names.join(" · ")}
+              </Text>
+            ),
+          )}
+          {data.projects.length ? (
+            <>
+              <Text style={styles.section}>{sectionLabel("projects", locale)}</Text>
+              {data.projects.map((p) => {
+                const logo = logoSrcById?.[p.id];
+                return (
+                  <View key={p.id} style={styles.itemRow} wrap={false}>
+                    {logo ? <Image src={logo} style={styles.logo} /> : null}
+                    <View style={styles.itemBody}>
+                      <Text style={styles.itemTitle}>{p.name}</Text>
+                      {p.url ? <Text style={styles.muted}>{p.url}</Text> : null}
+                      {p.description ? <Text>{p.description}</Text> : null}
+                      {p.technologies.length ? (
+                        <Text style={styles.muted}>
+                          {p.technologies.join(" · ")}
+                        </Text>
+                      ) : null}
+                      {p.highlights.map((h, i) => (
+                        <Text key={i} style={styles.bullet}>
+                          • {h}
+                        </Text>
+                      ))}
+                    </View>
+                  </View>
+                );
+              })}
+            </>
+          ) : null}
           {(data.certifications ?? []).length ? (
             <>
               <Text style={styles.section}>{sectionLabel("certifications", locale)}</Text>

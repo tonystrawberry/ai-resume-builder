@@ -64,8 +64,10 @@ export function WorkspaceClient({
   const [fullscreenPreview, setFullscreenPreview] = useState(false);
   const [dataEditorOpen, setDataEditorOpen] = useState(false);
 
-  const textEditable = locale === sourceLocale;
-  const previewData = textEditable ? sourceData : resumeData;
+  const isSourceLocale = locale === sourceLocale;
+  const previewData = isSourceLocale ? sourceData : resumeData;
+  /** Inline + structured edits work on every locale; chat AI still updates source only. */
+  const textEditable = true;
 
   async function applyProfileUpdate(profile: AppliedProfile) {
     const parsed = masterResumeSchema.parse(profile.data);
@@ -145,15 +147,44 @@ export function WorkspaceClient({
   async function saveDirectPatch(patch: import("@/lib/resume/schema").ResumePatch) {
     setEditError(null);
     const expectedVersion = version;
-    // Optimistic UI so the preview updates immediately.
-    const optimistic = applyConfirmedPatch(sourceData, patch);
-    const nextCompleteness = computeCompleteness(optimistic);
-    setSourceData(optimistic);
-    setVersion(expectedVersion + 1);
-    setCompleteness(nextCompleteness);
+
     if (locale === sourceLocale) {
+      const optimistic = applyConfirmedPatch(sourceData, patch);
+      const nextCompleteness = computeCompleteness(optimistic);
+      setSourceData(optimistic);
+      setVersion(expectedVersion + 1);
+      setCompleteness(nextCompleteness);
       setResumeData(bustResumeImageUrls(optimistic, expectedVersion + 1));
+      setPreviewUpdatedAt(new Date().toLocaleTimeString());
+
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profileId,
+          version: expectedVersion,
+          patch,
+          mode: "direct",
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        await refreshProfile();
+        setEditError(json.error?.message || "Could not save edit");
+        throw new Error(json.error?.message || "save failed");
+      }
+      await applyProfileUpdate({
+        data: json.profile.data,
+        completeness: json.profile.completeness,
+        version: json.profile.version,
+        selectedLocale: json.profile.selectedLocale,
+      });
+      return;
     }
+
+    const base = resumeData;
+    const optimistic = applyConfirmedPatch(base, patch);
+    setResumeData(bustResumeImageUrls(optimistic, Date.now()));
     setPreviewUpdatedAt(new Date().toLocaleTimeString());
 
     const res = await fetch("/api/profile", {
@@ -164,32 +195,64 @@ export function WorkspaceClient({
         version: expectedVersion,
         patch,
         mode: "direct",
+        locale,
       }),
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
       await refreshProfile();
-      setEditError(json.error?.message || "Could not save edit");
+      setEditError(json.error?.message || "Could not save translation edit");
       throw new Error(json.error?.message || "save failed");
     }
-    await applyProfileUpdate({
-      data: json.profile.data,
-      completeness: json.profile.completeness,
-      version: json.profile.version,
-      selectedLocale: json.profile.selectedLocale,
-    });
+    if (json.localePresentation?.data) {
+      setResumeData(
+        bustResumeImageUrls(json.localePresentation.data, Date.now()),
+      );
+    }
+    if (typeof json.profile?.version === "number") {
+      setVersion(json.profile.version);
+    }
   }
 
   async function saveStructuredData(next: MasterResume) {
     setEditError(null);
     const expectedVersion = version;
-    const nextCompleteness = computeCompleteness(next);
-    setSourceData(next);
-    setVersion(expectedVersion + 1);
-    setCompleteness(nextCompleteness);
+
     if (locale === sourceLocale) {
+      const nextCompleteness = computeCompleteness(next);
+      setSourceData(next);
+      setVersion(expectedVersion + 1);
+      setCompleteness(nextCompleteness);
       setResumeData(bustResumeImageUrls(next, expectedVersion + 1));
+      setPreviewUpdatedAt(new Date().toLocaleTimeString());
+
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profileId,
+          version: expectedVersion,
+          data: next,
+          mode: "replace",
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        await refreshProfile();
+        const message = json.error?.message || "Could not save structured data";
+        setEditError(message);
+        throw new Error(message);
+      }
+      await applyProfileUpdate({
+        data: json.profile.data,
+        completeness: json.profile.completeness,
+        version: json.profile.version,
+        selectedLocale: json.profile.selectedLocale,
+      });
+      return;
     }
+
+    setResumeData(bustResumeImageUrls(next, Date.now()));
     setPreviewUpdatedAt(new Date().toLocaleTimeString());
 
     const res = await fetch("/api/profile", {
@@ -200,21 +263,22 @@ export function WorkspaceClient({
         version: expectedVersion,
         data: next,
         mode: "replace",
+        locale,
       }),
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
       await refreshProfile();
-      const message = json.error?.message || "Could not save structured data";
+      const message =
+        json.error?.message || "Could not save translation structured data";
       setEditError(message);
       throw new Error(message);
     }
-    await applyProfileUpdate({
-      data: json.profile.data,
-      completeness: json.profile.completeness,
-      version: json.profile.version,
-      selectedLocale: json.profile.selectedLocale,
-    });
+    if (json.localePresentation?.data) {
+      setResumeData(
+        bustResumeImageUrls(json.localePresentation.data, Date.now()),
+      );
+    }
   }
 
   return (
@@ -274,11 +338,11 @@ export function WorkspaceClient({
             <div>
               <h2 className="text-lg font-medium">Preview</h2>
               <p className="text-xs text-muted">
-                {textEditable
-                  ? previewUpdatedAt
-                    ? `Updated ${previewUpdatedAt} · click text to edit`
-                    : "Click any text on the resume to edit"
-                  : "Switch back to the source language to edit text inline"}
+                {previewUpdatedAt
+                  ? `Updated ${previewUpdatedAt} · click text to edit`
+                  : isSourceLocale
+                    ? "Click any text on the resume to edit"
+                    : "Click any text to fix this translation (source language stays unchanged)"}
               </p>
               {editError ? (
                 <p className="mt-1 text-xs text-danger">{editError}</p>
@@ -297,9 +361,7 @@ export function WorkspaceClient({
               <StructuredDataEditorButton
                 open={dataEditorOpen}
                 onOpenChange={setDataEditorOpen}
-                data={sourceData}
-                disabled={!textEditable}
-                disabledReason="Switch back to the source language to edit structured data"
+                data={previewData}
                 onSave={(data) => saveStructuredData(data)}
               />
               <FullscreenA4PreviewButton

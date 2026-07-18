@@ -38,6 +38,7 @@ export const educationItemSchema = z.object({
   institution: z.string(),
   degree: z.string().optional(),
   field: z.string().optional(),
+  location: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   bullets: z.array(z.string()).optional(),
@@ -64,6 +65,8 @@ export const projectItemSchema = z.object({
   url: z.string().optional(),
   highlights: z.array(z.string()).default([]),
   technologies: z.array(z.string()).default([]),
+  /** Project / product icon path (/uploads/...) or URL */
+  logoUrl: z.string().optional(),
   provenance: provenanceSchema,
   sourceRefs: z.array(z.string()).optional(),
 });

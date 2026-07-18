@@ -233,3 +233,77 @@ describe("translate delta", () => {
     expect(merged.identity.photoUrl).toBe("/uploads/user/photo.png");
   });
 });
+
+describe("locale manual overrides", () => {
+  it("keeps hand-edited French text when an unrelated source field changes", () => {
+    const localeFr: MasterResume = {
+      ...sample,
+      summary: "Ingénieur senior (édition manuelle)",
+      experience: [
+        {
+          ...sample.experience[0],
+          title: "Ingénieur",
+          bullets: ["J'ai conçu des APIs (manuel)"],
+        },
+      ],
+      identity: {
+        ...sample.identity,
+        location: "Berlin",
+      },
+    };
+
+    const nextSource: MasterResume = {
+      ...sample,
+      identity: {
+        ...sample.identity,
+        location: "Paris",
+      },
+    };
+
+    const delta = buildTranslateDelta(sample, nextSource);
+    expect(delta.summary).toBeUndefined();
+    expect(delta.experience).toBeUndefined();
+    expect(delta.identity?.location).toBe("Paris");
+
+    const aligned = alignLocaleToSource(localeFr, nextSource);
+    const merged = applyTranslatedDelta(aligned, {
+      identity: { location: "Paris" },
+    });
+
+    expect(merged.summary).toBe("Ingénieur senior (édition manuelle)");
+    expect(merged.experience[0].bullets[0]).toBe(
+      "J'ai conçu des APIs (manuel)",
+    );
+    expect(merged.identity.location).toBe("Paris");
+  });
+
+  it("replaces locale text only for source fields that actually changed", () => {
+    const localeFr: MasterResume = {
+      ...sample,
+      summary: "Ancien résumé FR",
+      experience: [
+        {
+          ...sample.experience[0],
+          bullets: ["Ancienne puce FR"],
+        },
+      ],
+    };
+
+    const nextSource: MasterResume = {
+      ...sample,
+      summary: "Senior engineer",
+    };
+
+    const delta = buildTranslateDelta(sample, nextSource);
+    expect(delta.summary).toBe("Senior engineer");
+    expect(delta.experience).toBeUndefined();
+
+    const aligned = alignLocaleToSource(localeFr, nextSource);
+    const merged = applyTranslatedDelta(aligned, {
+      summary: "Ingénieur senior",
+    });
+
+    expect(merged.summary).toBe("Ingénieur senior");
+    expect(merged.experience[0].bullets[0]).toBe("Ancienne puce FR");
+  });
+});
