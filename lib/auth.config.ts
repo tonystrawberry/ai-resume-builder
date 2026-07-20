@@ -21,6 +21,7 @@ export const authConfig = {
       const path = request.nextUrl.pathname;
       const isApp =
         path.startsWith("/onboarding") ||
+        path.startsWith("/applications") ||
         path.startsWith("/resumes") ||
         path.startsWith("/workspace") ||
         path.startsWith("/sharing") ||
