@@ -1,6 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
@@ -112,9 +121,18 @@ function computePageStarts(
   return starts;
 }
 
+/** Separate fiber for print — React cannot mount the same child twice. */
+function cloneChild(children: ReactNode, key: string): ReactNode {
+  const child = Children.only(children);
+  if (!isValidElement(child)) return children;
+  return cloneElement(child as ReactElement, { key });
+}
+
 /**
  * Always lays out at real A4 (210×297mm) so page breaks match print / fullscreen.
  * If the parent is narrower, scales visually without reflowing text.
+ * Browser print uses a continuous clone (see .a4-preview-print) — Chrome
+ * ignores overflow clipping on the on-screen page stack.
  */
 export function A4PreviewShell({ children }: { children: ReactNode }) {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -178,16 +196,26 @@ export function A4PreviewShell({ children }: { children: ReactNode }) {
     pageCount * pageHeightPx + Math.max(0, pageCount - 1) * PAGE_GAP_PX;
 
   return (
-    <div ref={viewportRef} className="a4-preview-viewport w-full">
+    <div ref={viewportRef} className="a4-preview-viewport relative w-full">
+      {/* Continuous document for the browser Print dialog only. */}
       <div
-        className="a4-preview-fit mx-auto"
+        aria-hidden
+        className="a4-preview-print hidden w-[210mm] print:block"
+      >
+        <div className="a4-preview-content w-[210mm]">
+          {cloneChild(children, "a4-print")}
+        </div>
+      </div>
+
+      <div
+        className="a4-preview-fit mx-auto print:hidden"
         style={{
           height: `${Math.round(unscaledStackHeight * scale)}px`,
           width: `${Math.round(pageWidthPx * scale)}px`,
         }}
       >
         <div
-          className="a4-preview-stack flex flex-col gap-3"
+          className="a4-preview-stack flex flex-col gap-3 print:hidden"
           style={{
             width: `${A4_WIDTH_MM}mm`,
             transform: scale === 1 ? undefined : `scale(${scale})`,

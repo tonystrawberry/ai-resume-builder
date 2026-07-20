@@ -537,16 +537,15 @@ export function ClassicPreview({
           />
           <ul className="mt-2 space-y-2 text-sm">
             {(data.certifications ?? []).map((c) => (
-              <DeletablePreviewBlock
-                key={c.id}
-                as="li"
-                canEdit={canEdit}
-                label="Remove certification"
-                onDelete={() =>
-                  onPatch?.({ certifications: [deleteItemMarker(c.id)] })
-                }
-                className="flex gap-2 pr-5"
-              >
+              <li key={c.id} data-resume-block>
+                <DeletablePreviewBlock
+                  canEdit={canEdit}
+                  label="Remove certification"
+                  onDelete={() =>
+                    onPatch?.({ certifications: [deleteItemMarker(c.id)] })
+                  }
+                  className="flex gap-2 pr-5"
+                >
                   <EntryLogoSlot
                     profileId={profileId}
                     section="certifications"
@@ -555,7 +554,7 @@ export function ClassicPreview({
                     editable={editable}
                     onChanged={() => onMediaChanged?.()}
                   />
-                  <div className="min-w-0" data-resume-block>
+                  <div className="min-w-0">
                     <InlineText
                       className="font-medium"
                       value={c.name}
@@ -586,7 +585,7 @@ export function ClassicPreview({
                         })
                       }
                     />
-                    {(c.date || canEdit) ? (
+                    {c.date || canEdit ? (
                       <>
                         <span className="text-muted">, </span>
                         <InlineText
@@ -610,7 +609,8 @@ export function ClassicPreview({
                       </>
                     ) : null}
                   </div>
-              </DeletablePreviewBlock>
+                </DeletablePreviewBlock>
+              </li>
             ))}
           </ul>
         </section>

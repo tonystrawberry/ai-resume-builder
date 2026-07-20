@@ -46,7 +46,13 @@ a {
 @media print {
   @page {
     size: A4;
-    margin: 0;
+    /* Match on-screen continued-page pad (PAGE_PAD_MM = 10). */
+    margin: 10mm 0;
+  }
+
+  /* First page already has template padding (e.g. article p-8). */
+  @page :first {
+    margin-top: 0;
   }
 
   html,
@@ -90,17 +96,25 @@ a {
     display: none !important;
   }
 
+  /*
+   * Browser print modal: do NOT print the clipped multi-page preview stack.
+   * Chrome often ignores overflow clipping in print, which bisects rows
+   * (e.g. certification logo + text). Print a single continuous resume and
+   * keep atomic blocks together with break-inside: avoid.
+   */
+  .a4-preview-fit,
   .a4-preview-stack {
-    gap: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    transform: none !important;
-    width: 210mm !important;
-    max-width: none !important;
+    display: none !important;
   }
 
-  .a4-preview-viewport,
-  .a4-preview-fit {
+  .a4-preview-print {
+    display: block !important;
+    width: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .a4-preview-viewport {
     width: 210mm !important;
     height: auto !important;
     max-width: none !important;
@@ -108,36 +122,24 @@ a {
     overflow: visible !important;
   }
 
-  .a4-preview-page {
-    box-shadow: none !important;
-    outline: none !important;
-    margin: 0 !important;
-    width: 210mm !important;
-    height: 297mm !important;
-    max-width: none !important;
-    overflow: hidden !important;
-    break-after: page;
-    page-break-after: always;
-  }
-
-  .a4-preview-page:last-child {
-    break-after: auto;
-    page-break-after: auto;
-  }
-
-  .a4-preview-page-clip {
-    overflow: hidden !important;
-  }
-
   .a4-preview-content {
     width: 210mm !important;
     max-width: none !important;
   }
 
+  [data-resume-block] {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  [data-resume-keep-with-next] {
+    break-after: avoid-page !important;
+    page-break-after: avoid !important;
+  }
+
   /*
-   * Do NOT use break-inside:avoid on large sections — that reflows print
-   * differently from the clipped on-screen A4 pages. Pagination is owned by
-   * .a4-preview-page overflow clipping (same offsets as the preview).
+   * Large sections may still span pages; atomic rows use [data-resume-block].
+   * Screen pagination stays on .a4-preview-page overflow clipping.
    */
   .resume-section {
     break-inside: auto;

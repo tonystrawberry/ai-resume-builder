@@ -305,80 +305,78 @@ export function ModernPreview({
               />
               <ul className="mt-2 space-y-2 text-sm">
                 {(data.certifications ?? []).map((c) => (
-                  <DeletablePreviewBlock
-                    key={c.id}
-                    as="li"
-                    canEdit={canEdit}
-                    label="Remove certification"
-                    onDelete={() =>
-                      onPatch?.({ certifications: [deleteItemMarker(c.id)] })
-                    }
-                    className="flex gap-2 pr-5"
-                  >
-                    <div data-resume-block className="flex w-full gap-2">
-                    <EntryLogoSlot
-                      profileId={profileId}
-                      section="certifications"
-                      itemId={c.id}
-                      initialLogoUrl={c.logoUrl}
-                      editable={editable}
-                      onChanged={() => onMediaChanged?.()}
-                    />
-                    <div className="min-w-0">
-                      <InlineText
-                        as="p"
-                        className="font-medium"
-                        value={c.name}
-                        editable={canEdit}
-                        placeholder="Certification"
-                        onCommit={(name) =>
-                          onPatch?.({
-                            certifications: [
-                              { ...c, name, provenance: "user" },
-                            ],
-                          })
-                        }
+                  <li key={c.id} data-resume-block>
+                    <DeletablePreviewBlock
+                      canEdit={canEdit}
+                      label="Remove certification"
+                      onDelete={() =>
+                        onPatch?.({ certifications: [deleteItemMarker(c.id)] })
+                      }
+                      className="flex gap-2 pr-5"
+                    >
+                      <EntryLogoSlot
+                        profileId={profileId}
+                        section="certifications"
+                        itemId={c.id}
+                        initialLogoUrl={c.logoUrl}
+                        editable={editable}
+                        onChanged={() => onMediaChanged?.()}
                       />
-                      <p className="text-xs text-muted">
+                      <div className="min-w-0">
                         <InlineText
-                          value={c.issuer ?? ""}
+                          as="p"
+                          className="font-medium"
+                          value={c.name}
                           editable={canEdit}
-                          emptyLabel="issuer"
-                          placeholder="Issuer"
-                          onCommit={(issuer) =>
+                          placeholder="Certification"
+                          onCommit={(name) =>
                             onPatch?.({
                               certifications: [
-                                {
-                                  ...c,
-                                  issuer: issuer || undefined,
-                                  provenance: "user",
-                                },
+                                { ...c, name, provenance: "user" },
                               ],
                             })
                           }
                         />
-                        <span> · </span>
-                        <InlineText
-                          value={c.date ?? ""}
-                          editable={canEdit}
-                          emptyLabel="date"
-                          placeholder="YYYY"
-                          onCommit={(date) =>
-                            onPatch?.({
-                              certifications: [
-                                {
-                                  ...c,
-                                  date: date || undefined,
-                                  provenance: "user",
-                                },
-                              ],
-                            })
-                          }
-                        />
-                      </p>
-                    </div>
-                    </div>
-                  </DeletablePreviewBlock>
+                        <p className="text-xs text-muted">
+                          <InlineText
+                            value={c.issuer ?? ""}
+                            editable={canEdit}
+                            emptyLabel="issuer"
+                            placeholder="Issuer"
+                            onCommit={(issuer) =>
+                              onPatch?.({
+                                certifications: [
+                                  {
+                                    ...c,
+                                    issuer: issuer || undefined,
+                                    provenance: "user",
+                                  },
+                                ],
+                              })
+                            }
+                          />
+                          <span> · </span>
+                          <InlineText
+                            value={c.date ?? ""}
+                            editable={canEdit}
+                            emptyLabel="date"
+                            placeholder="YYYY"
+                            onCommit={(date) =>
+                              onPatch?.({
+                                certifications: [
+                                  {
+                                    ...c,
+                                    date: date || undefined,
+                                    provenance: "user",
+                                  },
+                                ],
+                              })
+                            }
+                          />
+                        </p>
+                      </div>
+                    </DeletablePreviewBlock>
+                  </li>
                 ))}
               </ul>
             </section>
