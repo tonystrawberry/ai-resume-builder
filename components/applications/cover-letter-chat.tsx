@@ -5,6 +5,16 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { extractCoverLetterSuggestion } from "@/lib/ai/cover-letter-chat";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +51,9 @@ export function CoverLetterChat({
   currentContent: string;
   onSuggestionApplied: (content: string) => void;
 }) {
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearBusy, setClearBusy] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
   const { messages, input, setInput, handleSubmit, isLoading, error, setMessages } =
     useChat({
       id: chatId,
@@ -107,6 +120,36 @@ export function CoverLetterChat({
     }
   }
 
+  async function clearChat() {
+    if (clearBusy || isLoading) return;
+    setClearBusy(true);
+    setClearError(null);
+    try {
+      const res = await fetch(
+        `/api/applications/${applicationId}/cover-letter/chat`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "clear" }),
+        },
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setClearError(json.error?.message || "Could not clear chat");
+        return;
+      }
+      setMessages([]);
+      setInput("");
+      setDismissedKey(null);
+      setApplyError(null);
+      setConfirmClear(false);
+    } catch {
+      setClearError("Network error");
+    } finally {
+      setClearBusy(false);
+    }
+  }
+
   async function rejectSuggestion() {
     if (!suggestionKey) return;
     setDismissedKey(suggestionKey);
@@ -162,6 +205,21 @@ export function CoverLetterChat({
 
   return (
     <div className="flex h-[calc(100dvh-20rem)] max-h-[calc(100dvh-20rem)] min-h-[16rem] flex-col overflow-hidden rounded-xl border border-border bg-card xl:h-[calc(100dvh-10rem)] xl:max-h-[calc(100dvh-10rem)]">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
+        <p className="text-xs font-medium text-muted">Cover letter chat</p>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={isLoading || clearBusy || messages.length === 0}
+          onClick={() => {
+            setClearError(null);
+            setConfirmClear(true);
+          }}
+        >
+          Clear chat
+        </Button>
+      </div>
       <div
         ref={scrollRef}
         className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4"
@@ -207,6 +265,11 @@ export function CoverLetterChat({
         {error ? (
           <div className="rounded-lg border border-danger/40 bg-card px-3 py-2 text-sm text-danger">
             {error.message || String(error)}
+          </div>
+        ) : null}
+        {clearError ? (
+          <div className="rounded-lg border border-danger/40 bg-card px-3 py-2 text-sm text-danger">
+            {clearError}
           </div>
         ) : null}
       </div>
@@ -286,6 +349,30 @@ export function CoverLetterChat({
           Send
         </Button>
       </form>
+
+      <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear chat history?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes all messages in this cover letter chat so you can
+              start fresh. Your letter draft is not deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearBusy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={clearBusy}
+              onClick={(e) => {
+                e.preventDefault();
+                void clearChat();
+              }}
+            >
+              {clearBusy ? "Clearing…" : "Clear chat"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

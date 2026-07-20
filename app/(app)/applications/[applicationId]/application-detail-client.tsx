@@ -739,6 +739,7 @@ export function ApplicationDetailClient({
             key={`${linkedResumeWorkspace.profileId}-${linkedResumeWorkspace.profileVersion}`}
             {...linkedResumeWorkspace}
             embedded
+            applicationId={application.id}
           />
         ) : (
           <Card className="space-y-3 py-6 text-sm text-muted">

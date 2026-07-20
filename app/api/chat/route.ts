@@ -7,6 +7,7 @@ import {
   buildEnrichmentSystemPrompt,
   countTrailingSkips,
   offlineAssistantReply,
+  type EnrichmentJobContext,
 } from "@/lib/ai/enrich-chat";
 import { getChatModel, hasLlmKey } from "@/lib/ai/models";
 import {
@@ -14,6 +15,8 @@ import {
   saveConversationMessages,
 } from "@/lib/ai/conversation";
 import { getOwnedProfile } from "@/lib/etl/persist";
+import { ensureJobPostingParsed } from "@/lib/applications/job-posting";
+import { prisma } from "@/lib/db";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -22,6 +25,10 @@ export async function POST(req: Request) {
   const body = await req.json();
   const profileId = body.profileId as string | undefined;
   if (!profileId) return badRequest("profileId is required");
+  const applicationId =
+    typeof body.applicationId === "string" && body.applicationId.trim()
+      ? body.applicationId.trim()
+      : null;
 
   const messages = (body.messages ?? []) as Array<{
     id?: string;
@@ -33,10 +40,52 @@ export async function POST(req: Request) {
   const profile = await getOwnedProfile(session.user.id, profileId);
   if (!profile) return notFound("Resume not found");
 
+  let jobContext: EnrichmentJobContext | null = null;
+  if (applicationId) {
+    const application = await prisma.jobApplication.findFirst({
+      where: {
+        id: applicationId,
+        userId: session.user.id,
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        companyName: true,
+        jobUrl: true,
+        jobPostingText: true,
+        linkedResumeId: true,
+      },
+    });
+    // Only inject when this chat is for the application's linked resume.
+    if (application && application.linkedResumeId === profileId) {
+      await ensureJobPostingParsed(application.id);
+      const refreshed = await prisma.jobApplication.findUnique({
+        where: { id: application.id },
+        select: {
+          title: true,
+          description: true,
+          companyName: true,
+          jobUrl: true,
+          jobPostingText: true,
+        },
+      });
+      if (refreshed) {
+        jobContext = {
+          title: refreshed.title,
+          companyName: refreshed.companyName,
+          description: refreshed.description,
+          jobUrl: refreshed.jobUrl,
+          jobPostingText: refreshed.jobPostingText,
+        };
+      }
+    }
+  }
+
   const conversation = await getOrCreateConversation(profile.id);
   const data = masterResumeSchema.parse(profile.data) as MasterResume;
   const gaps = computeCompleteness(data).gaps;
-  const system = buildEnrichmentSystemPrompt(data, gaps);
+  const system = buildEnrichmentSystemPrompt(data, gaps, jobContext);
 
   const emptyProfile =
     data.experience.length === 0 &&
@@ -125,4 +174,21 @@ export async function POST(req: Request) {
       return "Model request failed";
     },
   });
+}
+
+/** Clear persisted resume chat history so the user can start fresh. */
+export async function DELETE(req: Request) {
+  const session = await auth();
+  if (!session?.user?.id) return unauthorized();
+
+  const profileId = new URL(req.url).searchParams.get("profileId")?.trim();
+  if (!profileId) return badRequest("profileId is required");
+
+  const profile = await getOwnedProfile(session.user.id, profileId);
+  if (!profile) return notFound("Resume not found");
+
+  const conversation = await getOrCreateConversation(profile.id);
+  await saveConversationMessages(conversation.id, []);
+
+  return Response.json({ id: conversation.id, messages: [] });
 }

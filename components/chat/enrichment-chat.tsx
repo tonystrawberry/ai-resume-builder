@@ -5,6 +5,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PatchConfirm, type AppliedProfile } from "@/components/chat/patch-confirm";
 import { extractJsonPatch } from "@/lib/ai/enrich-chat";
 import { cn } from "@/lib/utils";
@@ -35,19 +45,32 @@ export function EnrichmentChat({
   initialMessages,
   profileVersion,
   onProfileUpdated,
+  applicationId,
 }: {
   profileId: string;
   chatId: string;
   initialMessages: MessageLike[];
   profileVersion: number;
   onProfileUpdated: (profile: AppliedProfile) => void;
+  /** When set (application Resume tab), chat is tailored to that job posting. */
+  applicationId?: string | null;
 }) {
   const [version, setVersion] = useState(profileVersion);
-  const { messages, input, setInput, handleSubmit, isLoading, error } =
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearBusy, setClearBusy] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
+  const chatBody = useMemo(
+    () => ({
+      profileId,
+      ...(applicationId ? { applicationId } : {}),
+    }),
+    [profileId, applicationId],
+  );
+  const { messages, input, setInput, handleSubmit, isLoading, error, setMessages } =
     useChat({
       id: chatId,
       api: "/api/chat",
-      body: { profileId },
+      body: chatBody,
       initialMessages: initialMessages.map((m, i) => ({
         id: m.id?.trim() ? m.id : `${chatId}-${m.role}-${i}`,
         role: m.role as "user" | "assistant" | "system" | "data",
@@ -75,12 +98,58 @@ export function EnrichmentChat({
     el.scrollTop = el.scrollHeight;
   }, [messages, latestPatch, isLoading]);
 
+  async function clearChat() {
+    if (clearBusy || isLoading) return;
+    setClearBusy(true);
+    setClearError(null);
+    try {
+      const res = await fetch(
+        `/api/chat?profileId=${encodeURIComponent(profileId)}`,
+        { method: "DELETE" },
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setClearError(json.error?.message || "Could not clear chat");
+        return;
+      }
+      setMessages([]);
+      setInput("");
+      setConfirmClear(false);
+    } catch {
+      setClearError("Network error");
+    } finally {
+      setClearBusy(false);
+    }
+  }
+
   return (
     <div className="flex h-[calc(100dvh-20rem)] max-h-[calc(100dvh-20rem)] min-h-[16rem] flex-col overflow-hidden rounded-xl border border-border bg-card xl:h-[calc(100dvh-10rem)] xl:max-h-[calc(100dvh-10rem)]">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
+        <p className="text-xs font-medium text-muted">Resume chat</p>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={isLoading || clearBusy || messages.length === 0}
+          onClick={() => {
+            setClearError(null);
+            setConfirmClear(true);
+          }}
+        >
+          Clear chat
+        </Button>
+      </div>
       <div
         ref={scrollRef}
         className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4"
       >
+        {messages.length === 0 ? (
+          <p className="text-sm text-muted">
+            {applicationId
+              ? "Ask how to tailor this resume to the job posting — start a fresh conversation anytime."
+              : "Share an achievement or ask what to improve next."}
+          </p>
+        ) : null}
         {messages.map((m, i) => {
           const text = messageText(m);
           if (!text.trim() && m.role !== "assistant") return null;
@@ -118,6 +187,11 @@ export function EnrichmentChat({
             {error.message || String(error)}
           </div>
         ) : null}
+        {clearError ? (
+          <div className="rounded-lg border border-danger/40 bg-card px-3 py-2 text-sm text-danger">
+            {clearError}
+          </div>
+        ) : null}
       </div>
       {latestPatch ? (
         <PatchConfirm
@@ -144,6 +218,30 @@ export function EnrichmentChat({
           Send
         </Button>
       </form>
+
+      <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear chat history?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes all messages in this resume chat so you can start
+              fresh. Your resume content is not deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearBusy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={clearBusy}
+              onClick={(e) => {
+                e.preventDefault();
+                void clearChat();
+              }}
+            >
+              {clearBusy ? "Clearing…" : "Clear chat"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

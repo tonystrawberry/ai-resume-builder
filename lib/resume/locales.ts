@@ -1,7 +1,7 @@
 export const RESUME_LOCALES = [
-  { id: "en", label: "English", language: "English" },
-  { id: "ja", label: "日本語", language: "Japanese" },
-  { id: "fr", label: "Français", language: "French" },
+  { id: "en", label: "EN", language: "English" },
+  { id: "ja", label: "JA", language: "Japanese" },
+  { id: "fr", label: "FR", language: "French" },
 ] as const;
 
 export type ResumeLocaleId = (typeof RESUME_LOCALES)[number]["id"];

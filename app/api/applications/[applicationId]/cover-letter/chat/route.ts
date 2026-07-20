@@ -158,12 +158,20 @@ export async function PATCH(req: Request, { params }: Params) {
   const { applicationId } = await params;
 
   const body = (await req.json().catch(() => ({}))) as { action?: string };
-  if (body.action !== "dismiss-suggestion") {
+  if (body.action !== "dismiss-suggestion" && body.action !== "clear") {
     return badRequest("Unsupported action");
   }
 
   const result = await getOrCreateCoverLetter(session.user.id, applicationId);
   if (!result) return notFound("Application not found");
+
+  if (body.action === "clear") {
+    await saveCoverLetterMessages(result.conversation.id, []);
+    return NextResponse.json({
+      id: result.conversation.id,
+      messages: [],
+    });
+  }
 
   const messages = Array.isArray(result.conversation.messages)
     ? (result.conversation.messages as ChatMessage[])

@@ -39,6 +39,7 @@ export function WorkspaceClient({
   initialLocale,
   sourceLocale,
   embedded = false,
+  applicationId = null,
 }: {
   profileId: string;
   resumeTitle: string;
@@ -53,6 +54,8 @@ export function WorkspaceClient({
   sourceLocale: string;
   /** Hide page-level breadcrumb/title when embedded in another page (e.g. application tab). */
   embedded?: boolean;
+  /** Application Resume tab — injects parsed job posting into chat. */
+  applicationId?: string | null;
 }) {
   const [completeness, setCompleteness] = useState(initialCompleteness);
   const [sourceData, setSourceData] = useState(initialData);
@@ -341,6 +344,7 @@ export function WorkspaceClient({
             initialMessages={initialMessages}
             profileVersion={version}
             onProfileUpdated={(profile) => void applyProfileUpdate(profile)}
+            applicationId={applicationId}
           />
         </div>
 

@@ -1,5 +1,13 @@
 import type { MasterResume, ResumeGap } from "@/lib/resume/schema";
 
+export type EnrichmentJobContext = {
+  title: string;
+  companyName: string | null;
+  description: string | null;
+  jobUrl: string | null;
+  jobPostingText: string | null;
+};
+
 function isMostlyEmpty(profile: MasterResume) {
   return (
     profile.experience.length === 0 &&
@@ -13,12 +21,42 @@ function isMostlyEmpty(profile: MasterResume) {
 export function buildEnrichmentSystemPrompt(
   profile: MasterResume,
   gaps: ResumeGap[],
+  jobContext?: EnrichmentJobContext | null,
 ) {
   const topGaps = gaps.slice(0, 5);
   const empty = isMostlyEmpty(profile);
 
-  return `You are a resume-building coach. The user builds their entire resume through this chat (no LinkedIn/GitHub import).
+  const jobBlock = jobContext
+    ? `
+CRITICAL — target job context is ALREADY provided below. You MUST use it.
+- Do NOT ask the user to paste or share the job description, job title, or key requirements.
+- Do NOT say you need the posting "for accurate advice" — you already have it.
+- Immediately tailor coaching and patches to this role using the data below.
+- Never invent credentials; only emphasize real experience that matches the posting.
 
+Target application:
+- Role: ${jobContext.title}
+- Company: ${jobContext.companyName || "(not provided)"}
+- Job URL: ${jobContext.jobUrl || "(not provided)"}
+- User notes:
+${jobContext.description || "(not provided)"}
+${
+  jobContext.jobPostingText
+    ? `
+Parsed job posting (authoritative — use this):
+${jobContext.jobPostingText}
+
+When suggesting patches, prioritize skills, keywords, and experience bullets that honestly match this posting. Prefer rephrasing or emphasizing real experience over inventing new claims.
+`
+    : `
+Parsed job posting text is not available. Still do NOT ask the user to paste a JD — work from the role/company/notes above and the resume.
+`
+}
+`
+    : "";
+
+  return `You are a resume-building coach. The user builds their entire resume through this chat (no LinkedIn/GitHub import).
+${jobBlock}
 Goals:
 - Ask ONE clear question at a time.
 - Never invent employers, dates, degrees, or outcomes — only use what the user provides.
