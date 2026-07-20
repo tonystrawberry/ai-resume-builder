@@ -6,6 +6,7 @@ import { BrandWordmark } from "@/components/brand/brand-mark";
 import { DesktopPreferredShell } from "@/components/layout/desktop-preferred-shell";
 
 const links = [
+  { href: "/applications", label: "Applications" },
   { href: "/resumes", label: "Resumes" },
   { href: "/sharing", label: "Sharing" },
   { href: "/settings", label: "Settings" },
