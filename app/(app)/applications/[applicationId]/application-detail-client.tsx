@@ -563,7 +563,7 @@ export function ApplicationDetailClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4 print:hidden">
         <div className="min-w-0 space-y-2">
           <Link
             href="/applications"
@@ -594,9 +594,11 @@ export function ApplicationDetailClient({
         </Button>
       </div>
 
-      {pageError ? <p className="text-sm text-danger">{pageError}</p> : null}
+      {pageError ? (
+        <p className="text-sm text-danger print:hidden">{pageError}</p>
+      ) : null}
 
-      <div className="border-b border-border">
+      <div className="border-b border-border print:hidden">
         <nav className="-mb-px flex gap-4" aria-label="Application tabs">
           <button
             type="button"
@@ -637,7 +639,11 @@ export function ApplicationDetailClient({
         </nav>
       </div>
 
-      <div className={tab === "information" ? "block" : "hidden"}>
+      <div
+        className={
+          tab === "information" ? "block print:hidden" : "hidden print:hidden"
+        }
+      >
         <div className="max-w-2xl">
           <ApplicationForm
             form={form}
@@ -656,7 +662,11 @@ export function ApplicationDetailClient({
         </div>
       </div>
 
-      <div className={tab === "resume" ? "block" : "hidden"}>
+      <div
+        className={
+          tab === "resume" ? "block" : "hidden print:hidden"
+        }
+      >
         {linkedResumeWorkspace ? (
           <WorkspaceClient
             key={`${linkedResumeWorkspace.profileId}-${linkedResumeWorkspace.profileVersion}`}
@@ -683,7 +693,7 @@ export function ApplicationDetailClient({
         )}
       </div>
 
-      <div className={tab === "cover-letter" ? "block" : "hidden"}>
+      <div className={tab === "cover-letter" ? "block print:hidden" : "hidden print:hidden"}>
         <div className="grid gap-4 xl:grid-cols-4">
           {coverError && !coverLoaded ? (
             <p className="text-sm text-danger xl:col-span-4">{coverError}</p>
