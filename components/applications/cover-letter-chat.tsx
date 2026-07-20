@@ -337,7 +337,8 @@ export function CoverLetterChat({
           rows={2}
           className="min-h-[2.5rem] max-h-40 resize-y"
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            // Enter = new line; ⌘/Ctrl+Enter sends.
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
               if (!isLoading && input.trim()) {
                 handleSubmit(e as unknown as FormEvent<HTMLFormElement>);

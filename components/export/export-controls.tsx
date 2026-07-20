@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, FileDown, FileText, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { IncompleteWarning } from "@/components/export/incomplete-warning";
 import { RESUME_LOCALES } from "@/lib/resume/locales";
 import type { MasterResume } from "@/lib/resume/schema";
@@ -243,9 +244,7 @@ export function ExportControls({
         ) : null}
       </div>
 
-      {busy ? (
-        <p className="text-xs text-muted">Translating…</p>
-      ) : null}
+      {busy ? <Spinner label="Translating" /> : null}
       {shareUrl ? (
         <div className="basis-full rounded-md border border-border bg-card px-3 py-2 text-xs">
           <p className="text-muted">

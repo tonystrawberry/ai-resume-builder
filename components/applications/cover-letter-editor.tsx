@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Spinner } from "@/components/ui/spinner";
 import { CoverLetterFrame } from "@/components/applications/cover-letter-frame";
 import { FullscreenCoverLetterPreviewButton } from "@/components/applications/cover-letter-preview-button";
 import { CoverLetterExportControls } from "@/components/applications/cover-letter-export-controls";
@@ -207,14 +208,16 @@ export function CoverLetterEditor({
           </label>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted">
-            {translating
-              ? "Translating…"
-              : busy
-                ? "Saving…"
-                : dirty
-                  ? "Unsaved"
-                  : "Saved"}
+          <span className="inline-flex min-h-4 items-center text-xs text-muted">
+            {translating ? (
+              <Spinner label="Translating" />
+            ) : busy ? (
+              "Saving…"
+            ) : dirty ? (
+              "Unsaved"
+            ) : (
+              "Saved"
+            )}
           </span>
           <Button
             size="sm"
