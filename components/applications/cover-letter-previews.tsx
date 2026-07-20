@@ -248,7 +248,7 @@ export function ClassicCoverLetterPreview({
         <div className="min-w-0 flex-1 space-y-1">
           <InlineText
             as="h1"
-            className="text-2xl font-bold tracking-tight text-neutral-900 uppercase"
+            className="cover-letter-theme-accent text-2xl font-semibold tracking-tight uppercase"
             value={identity.fullName}
             editable={canEdit}
             placeholder="Your name"
@@ -258,7 +258,7 @@ export function ClassicCoverLetterPreview({
           />
           <InlineText
             as="p"
-            className="text-sm text-neutral-500"
+            className="text-sm font-bold text-neutral-900"
             value={identity.headline ?? ""}
             editable={canEdit}
             emptyLabel="Add a title"
@@ -518,7 +518,7 @@ export function ModernCoverLetterPreview({
           <div className="min-w-0 space-y-1.5">
             <InlineText
               as="h1"
-              className="text-xl font-bold tracking-wide text-neutral-900 uppercase"
+              className="cover-letter-theme-accent text-xl font-bold tracking-wide uppercase"
               value={identity.fullName}
               editable={canEdit}
               placeholder="Your name"
@@ -528,7 +528,7 @@ export function ModernCoverLetterPreview({
             />
             <InlineText
               as="p"
-              className="text-xs tracking-wide text-neutral-400 uppercase"
+              className="text-xs font-bold tracking-wide text-neutral-900 uppercase"
               value={identity.headline ?? ""}
               editable={canEdit}
               emptyLabel="Add a title"
