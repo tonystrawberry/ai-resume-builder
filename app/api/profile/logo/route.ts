@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
 import path from "path";
 import { auth } from "@/lib/auth";
 import {
   badRequest,
   notFound,
+  serviceUnavailable,
   unauthorized,
   unprocessable,
 } from "@/lib/api-error";
@@ -15,12 +15,28 @@ import {
   isLogoSection,
   type LogoSection,
 } from "@/lib/resume/logo-sections";
+import {
+  deleteLocalUploadVariants,
+  deleteStoredUpload,
+  isBlobStorageConfigured,
+  storeUploadedImage,
+  uploadCacheBuster,
+} from "@/lib/media/storage";
+import { blobEntryLogoPath } from "@/lib/blob/paths";
 
 const MAX_BYTES = 1 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/svg+xml"]);
+const LOGO_EXTENSIONS = ["jpg", "png", "webp", "svg"] as const;
 
 function safeItemId(id: string) {
   return id.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80);
+}
+
+function extForMime(type: string): (typeof LOGO_EXTENSIONS)[number] {
+  if (type === "image/png") return "png";
+  if (type === "image/webp") return "webp";
+  if (type === "image/svg+xml") return "svg";
+  return "jpg";
 }
 
 export async function POST(req: Request) {
@@ -55,31 +71,42 @@ export async function POST(req: Request) {
   const item = findLogoSectionItem(data, section as LogoSection, itemId);
   if (!item) return notFound("Item not found on profile");
 
-  const ext =
-    file.type === "image/png"
-      ? "png"
-      : file.type === "image/webp"
-        ? "webp"
-        : file.type === "image/svg+xml"
-          ? "svg"
-          : "jpg";
-
-  const dir = path.join(process.cwd(), "public", "uploads", "logos", profile.id);
-  await fs.mkdir(dir, { recursive: true });
+  const ext = extForMime(file.type);
   const base = `${section}_${safeItemId(itemId)}`;
-  for (const other of ["jpg", "png", "webp", "svg"]) {
-    await fs.unlink(path.join(dir, `${base}.${other}`)).catch(() => undefined);
-  }
   const filename = `${base}.${ext}`;
-  await fs.writeFile(path.join(dir, filename), Buffer.from(await file.arrayBuffer()));
+  const storageKey = isBlobStorageConfigured()
+    ? blobEntryLogoPath(profile.id, filename)
+    : `uploads/logos/${profile.id}/${filename}`;
 
-  const logoUrl = `/uploads/logos/${profile.id}/${filename}`;
-  item.logoUrl = logoUrl;
+  let storedUrl: string;
+  try {
+    storedUrl = await storeUploadedImage({
+      storageKey,
+      buffer: Buffer.from(await file.arrayBuffer()),
+      contentType: file.type,
+      previousUrl: item.logoUrl,
+    });
+  } catch (e) {
+    console.error("[profile/logo] upload failed", e);
+    if (!isBlobStorageConfigured()) {
+      return serviceUnavailable(
+        "Logo storage is not configured. Set BLOB_READ_WRITE_TOKEN on Vercel (Storage → Blob).",
+      );
+    }
+    throw e;
+  }
+
+  if (!isBlobStorageConfigured()) {
+    const dir = path.join(process.cwd(), "public", "uploads", "logos", profile.id);
+    await deleteLocalUploadVariants(dir, base, [...LOGO_EXTENSIONS], ext);
+  }
+
+  item.logoUrl = storedUrl.split("?")[0];
 
   const updated = await saveMasterResume({ profileId: profile.id, data });
   return NextResponse.json({
     profile: profileToResponse(updated),
-    logoUrl: `${logoUrl}?v=${Date.now()}`,
+    logoUrl: uploadCacheBuster(storedUrl),
   });
 }
 
@@ -106,11 +133,14 @@ export async function DELETE(req: Request) {
   const item = findLogoSectionItem(data, section as LogoSection, itemId);
   if (!item) return notFound("Item not found on profile");
 
-  const dir = path.join(process.cwd(), "public", "uploads", "logos", profile.id);
-  const base = `${section}_${safeItemId(itemId)}`;
-  for (const ext of ["jpg", "png", "webp", "svg"]) {
-    await fs.unlink(path.join(dir, `${base}.${ext}`)).catch(() => undefined);
+  await deleteStoredUpload(item.logoUrl);
+
+  if (!isBlobStorageConfigured()) {
+    const dir = path.join(process.cwd(), "public", "uploads", "logos", profile.id);
+    const base = `${section}_${safeItemId(itemId)}`;
+    await deleteLocalUploadVariants(dir, base, [...LOGO_EXTENSIONS]);
   }
+
   delete item.logoUrl;
 
   const updated = await saveMasterResume({ profileId: profile.id, data });

@@ -76,12 +76,24 @@ If cold starts are unacceptable, upgrade Neon to a paid plan that keeps compute 
 | `AUTH_URL` | Yes | Production URL, e.g. `https://rirekisho.vercel.app` (slug has no `!`; no trailing slash). Used for auth and share links. |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Yes | Gemini API key |
 | `GEMINI_MODEL` | No | Default in code is `gemini-flash-latest` |
-| `BLOB_READ_WRITE_TOKEN` | No | **Storage → Blob** — cached shared PDFs; without it, PDFs render on demand |
+| `BLOB_READ_WRITE_TOKEN` | Yes (prod) | Your **existing** Vercel Blob store — photos, logos, and shared PDFs (one token, path prefixes below) |
 | `APIFY_TOKEN` | No | LinkedIn import via Apify only |
 
 Copy values from local `.env.local` where appropriate. **Never** commit secrets or reuse local `DATABASE_URL`.
 
 See [`.env.example`](./.env.example) for the full list.
+
+### Blob store layout (single store)
+
+Connect your **existing** Blob store to the project — do **not** create a second one. All files share `BLOB_READ_WRITE_TOKEN`; paths are separated by prefix:
+
+| Prefix | Contents |
+|--------|----------|
+| `resume/shares/{token}/resume.pdf` | Cached shared-link PDFs |
+| `images/photos/{profileId}/photo.{ext}` | Profile photos |
+| `images/logos/{profileId}/{section}_{itemId}.{ext}` | Experience / education / certification / project logos |
+
+Local dev without Blob still writes under `public/uploads/…` on disk.
 
 ---
 
@@ -172,6 +184,7 @@ The app uses a desktop-only layout below 1280px width. Printing uses the same cl
 | `500` on DB routes after deploy | Direct (non-pooled) URL | Switch to Neon **pooled** connection string |
 | GitHub sign-in redirect error | Callback URL mismatch | Match `/api/auth/callback/github` to production domain |
 | Share links wrong host | `AUTH_URL` unset or stale | Set `AUTH_URL` to production URL, redeploy |
+| Photo/logo upload fails on Vercel | No Blob storage | **Storage → Blob**, connect to project, set `BLOB_READ_WRITE_TOKEN` |
 | Blank PDF when printing on narrow viewport | Desktop shell hides content | Already fixed with `print:contents` on desktop shell — ensure latest code is deployed |
 
 ---

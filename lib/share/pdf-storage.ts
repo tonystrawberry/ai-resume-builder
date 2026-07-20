@@ -1,18 +1,14 @@
 import { del, put } from "@vercel/blob";
 import type { MasterResume } from "@/lib/resume/schema";
 import type { TemplateId } from "@/lib/resume/templates";
+import { blobResumeSharePath } from "@/lib/blob/paths";
 import { renderResumePdf } from "@/lib/pdf/render";
+import { isBlobStorageConfigured } from "@/lib/media/storage";
 
-export function isBlobStorageConfigured(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
-}
-
-function sharePdfPath(token: string): string {
-  return `shares/${token}/resume.pdf`;
-}
+export { isBlobStorageConfigured };
 
 /**
- * Render + upload a shared resume PDF to Vercel Blob.
+ * Render + upload a shared resume PDF to the shared Blob store (`resume/` prefix).
  * Returns null when Blob is not configured (local/dev fallback = on-demand render).
  */
 export async function storeSharedResumePdf(params: {
@@ -34,7 +30,7 @@ export async function storeSharedResumePdf(params: {
     await deleteSharedResumePdf(params.previousPdfUrl);
   }
 
-  const blob = await put(sharePdfPath(params.token), buffer, {
+  const blob = await put(blobResumeSharePath(params.token), buffer, {
     access: "public",
     contentType: "application/pdf",
     addRandomSuffix: false,

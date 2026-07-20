@@ -1,20 +1,35 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
 import path from "path";
 import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import {
   badRequest,
   notFound,
+  serviceUnavailable,
   unauthorized,
   unprocessable,
 } from "@/lib/api-error";
 import { getOwnedProfile, profileToResponse, saveMasterResume } from "@/lib/etl/persist";
 import { masterResumeSchema } from "@/lib/resume/schema";
 import { prisma } from "@/lib/db";
+import {
+  deleteLocalUploadVariants,
+  deleteStoredUpload,
+  isBlobStorageConfigured,
+  storeUploadedImage,
+  uploadCacheBuster,
+} from "@/lib/media/storage";
+import { blobProfilePhotoPath } from "@/lib/blob/paths";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
+const PHOTO_EXTENSIONS = ["jpg", "png", "webp"] as const;
+
+function extForMime(type: string): (typeof PHOTO_EXTENSIONS)[number] {
+  if (type === "image/png") return "png";
+  if (type === "image/webp") return "webp";
+  return "jpg";
+}
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -38,23 +53,36 @@ export async function POST(req: Request) {
   const profile = await getOwnedProfile(session.user.id, profileId);
   if (!profile) return notFound("Resume not found");
 
-  const ext =
-    file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-  const dir = path.join(process.cwd(), "public", "uploads", "photos", profile.id);
-  await fs.mkdir(dir, { recursive: true });
+  const data = masterResumeSchema.parse(profile.data);
+  const ext = extForMime(file.type);
+  const storageKey = isBlobStorageConfigured()
+    ? blobProfilePhotoPath(profile.id, ext)
+    : `uploads/photos/${profile.id}/photo.${ext}`;
 
-  const filename = `photo.${ext}`;
-  const abs = path.join(dir, filename);
-  await fs.writeFile(abs, Buffer.from(await file.arrayBuffer()));
-
-  for (const other of ["jpg", "png", "webp"]) {
-    if (other === ext) continue;
-    await fs.unlink(path.join(dir, `photo.${other}`)).catch(() => undefined);
+  let storedUrl: string;
+  try {
+    storedUrl = await storeUploadedImage({
+      storageKey,
+      buffer: Buffer.from(await file.arrayBuffer()),
+      contentType: file.type,
+      previousUrl: data.identity.photoUrl,
+    });
+  } catch (e) {
+    console.error("[profile/photo] upload failed", e);
+    if (!isBlobStorageConfigured()) {
+      return serviceUnavailable(
+        "Photo storage is not configured. Set BLOB_READ_WRITE_TOKEN on Vercel (Storage → Blob).",
+      );
+    }
+    throw e;
   }
 
-  const photoUrl = `/uploads/photos/${profile.id}/${filename}?v=${Date.now()}`;
-  const data = masterResumeSchema.parse(profile.data);
-  data.identity.photoUrl = photoUrl.split("?")[0];
+  if (!isBlobStorageConfigured()) {
+    const dir = path.join(process.cwd(), "public", "uploads", "photos", profile.id);
+    await deleteLocalUploadVariants(dir, "photo", [...PHOTO_EXTENSIONS], ext);
+  }
+
+  data.identity.photoUrl = storedUrl.split("?")[0];
 
   const updated = await saveMasterResume({
     profileId: profile.id,
@@ -63,7 +91,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     profile: profileToResponse(updated),
-    photoUrl,
+    photoUrl: uploadCacheBuster(storedUrl),
   });
 }
 
@@ -80,12 +108,14 @@ export async function DELETE(req: Request) {
   const profile = await getOwnedProfile(session.user.id, profileId);
   if (!profile) return notFound("Resume not found");
 
-  const dir = path.join(process.cwd(), "public", "uploads", "photos", profile.id);
-  for (const ext of ["jpg", "png", "webp"]) {
-    await fs.unlink(path.join(dir, `photo.${ext}`)).catch(() => undefined);
+  const data = masterResumeSchema.parse(profile.data);
+  await deleteStoredUpload(data.identity.photoUrl);
+
+  if (!isBlobStorageConfigured()) {
+    const dir = path.join(process.cwd(), "public", "uploads", "photos", profile.id);
+    await deleteLocalUploadVariants(dir, "photo", [...PHOTO_EXTENSIONS]);
   }
 
-  const data = masterResumeSchema.parse(profile.data);
   delete data.identity.photoUrl;
 
   const updated = await prisma.masterResumeProfile.update({

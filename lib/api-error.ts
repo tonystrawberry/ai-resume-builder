@@ -47,3 +47,7 @@ export function unprocessable(message: string, details?: unknown) {
 export function upstreamError(message: string, details?: unknown) {
   return apiError(502, "UPSTREAM_ERROR", message, details);
 }
+
+export function serviceUnavailable(message: string, details?: unknown) {
+  return apiError(503, "SERVICE_UNAVAILABLE", message, details);
+}
