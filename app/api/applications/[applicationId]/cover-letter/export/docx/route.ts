@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { badRequest, notFound, unauthorized } from "@/lib/api-error";
 import { getOrCreateCoverLetter } from "@/lib/applications/cover-letter";
-import { parseCoverLetterIdentity } from "@/lib/cover-letter/identity";
+import { resolveCoverLetterIdentity } from "@/lib/cover-letter/identity";
 import { getOrCreateCoverLetterPresentation } from "@/lib/cover-letter/presentations";
 import { renderCoverLetterDocx } from "@/lib/docx/cover-letter";
 import { isResumeLocale } from "@/lib/resume/locales";
@@ -31,7 +31,10 @@ export async function POST(req: Request, { params }: Params) {
     locale,
   });
 
-  const identity = parseCoverLetterIdentity(application.linkedResume?.data);
+  const identity = resolveCoverLetterIdentity(
+    coverLetter.identity,
+    application.linkedResume?.data,
+  );
   const buffer = await renderCoverLetterDocx({
     content: presentation.content,
     subject: presentation.subject,

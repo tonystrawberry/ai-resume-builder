@@ -1,6 +1,9 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
+import { InlineText } from "@/components/preview/inline-text";
+import { IdentityLinksRow } from "@/components/preview/identity-links";
+import { ProfilePhotoSlot } from "@/components/profile/profile-photo-slot";
 import type {
   CoverLetterIdentity,
   CoverLetterMeta,
@@ -190,6 +193,9 @@ export function ClassicCoverLetterPreview({
   primaryColor = DEFAULT_PRIMARY_COLOR,
   locale = "en",
   subject = "",
+  editable = false,
+  profileId,
+  onIdentityChange,
 }: {
   content: string;
   identity: CoverLetterIdentity;
@@ -197,17 +203,20 @@ export function ClassicCoverLetterPreview({
   primaryColor?: string;
   locale?: ResumeLocaleId | string;
   subject?: string;
+  editable?: boolean;
+  profileId?: string | null;
+  onIdentityChange?: (next: CoverLetterIdentity) => void;
 }) {
   const labels = coverLetterLabels(locale);
-  const contactBits = [
-    identity.location,
-    identity.phone,
-    identity.email,
-  ].filter(Boolean);
   const recipient = recipientLines(meta);
   const color =
     normalizePrimaryColor(primaryColor) ?? DEFAULT_PRIMARY_COLOR;
   const subjectLine = subject.trim() || meta.subject?.trim() || "";
+  const canEdit = Boolean(editable && onIdentityChange);
+
+  function commit(next: CoverLetterIdentity) {
+    onIdentityChange?.(next);
+  }
 
   return (
     <article
@@ -215,29 +224,110 @@ export function ClassicCoverLetterPreview({
       style={resumeThemeCssVars(color)}
     >
       <header className="flex items-start gap-4 border-b border-neutral-200 px-6 py-5">
-        <Photo
-          url={identity.photoUrl}
-          name={identity.fullName}
-          size="md"
-          tone="light"
-        />
-        <div className="min-w-0 flex-1">
-          <h1 className="cover-letter-theme-accent text-2xl font-semibold tracking-tight uppercase">
-            {identity.fullName}
-          </h1>
-          {identity.headline ? (
-            <p className="mt-0.5 text-sm text-neutral-500">{identity.headline}</p>
-          ) : null}
-          {contactBits.length ? (
-            <p className="mt-2 text-xs text-neutral-500">
-              {contactBits.join(" · ")}
-            </p>
-          ) : null}
-          {identity.links?.length ? (
-            <p className="mt-1 text-xs text-neutral-500">
-              {identity.links.map((l) => linkLabel(l)).join(" · ")}
-            </p>
-          ) : null}
+        {canEdit && profileId ? (
+          <ProfilePhotoSlot
+            profileId={profileId}
+            initialPhotoUrl={identity.photoUrl}
+            editable
+            variant="classic"
+            onChanged={(photoUrl) =>
+              commit({
+                ...identity,
+                photoUrl: photoUrl || undefined,
+              })
+            }
+          />
+        ) : (
+          <Photo
+            url={identity.photoUrl}
+            name={identity.fullName}
+            size="md"
+            tone="light"
+          />
+        )}
+        <div className="min-w-0 flex-1 space-y-1">
+          <InlineText
+            as="h1"
+            className="cover-letter-theme-accent text-2xl font-semibold tracking-tight uppercase"
+            value={identity.fullName}
+            editable={canEdit}
+            placeholder="Your name"
+            onCommit={(fullName) =>
+              commit({ ...identity, fullName: fullName || "Your Name" })
+            }
+          />
+          <InlineText
+            as="p"
+            className="text-sm text-neutral-500"
+            value={identity.headline ?? ""}
+            editable={canEdit}
+            emptyLabel="Add a title"
+            placeholder="e.g. Fullstack Software Engineer"
+            onCommit={(headline) =>
+              commit({
+                ...identity,
+                headline: headline || undefined,
+              })
+            }
+          />
+          <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 text-xs text-neutral-500">
+            <InlineText
+              value={identity.location ?? ""}
+              editable={canEdit}
+              emptyLabel="location"
+              placeholder="City, Country"
+              onCommit={(location) =>
+                commit({
+                  ...identity,
+                  location: location || undefined,
+                })
+              }
+            />
+            <span className="text-neutral-300" aria-hidden>
+              ·
+            </span>
+            <InlineText
+              value={identity.phone ?? ""}
+              editable={canEdit}
+              emptyLabel="phone"
+              placeholder="+33 …"
+              onCommit={(phone) =>
+                commit({
+                  ...identity,
+                  phone: phone || undefined,
+                })
+              }
+            />
+            <span className="text-neutral-300" aria-hidden>
+              ·
+            </span>
+            <InlineText
+              value={identity.email ?? ""}
+              editable={canEdit}
+              emptyLabel="email"
+              placeholder="email@example.com"
+              onCommit={(email) =>
+                commit({
+                  ...identity,
+                  email: email || undefined,
+                })
+              }
+            />
+            <IdentityLinksRow
+              links={identity.links?.map((l) => ({
+                url: l.url,
+                label: l.label || "Website",
+              }))}
+              canEdit={canEdit}
+              separatorClassName="text-neutral-300"
+              onChange={(links) =>
+                commit({
+                  ...identity,
+                  links: links.length ? links : undefined,
+                })
+              }
+            />
+          </div>
         </div>
       </header>
 
@@ -312,6 +402,9 @@ export function ModernCoverLetterPreview({
   primaryColor = DEFAULT_PRIMARY_COLOR,
   locale = "en",
   subject = "",
+  editable = false,
+  profileId,
+  onIdentityChange,
 }: {
   content: string;
   identity: CoverLetterIdentity;
@@ -319,6 +412,9 @@ export function ModernCoverLetterPreview({
   primaryColor?: string;
   locale?: ResumeLocaleId | string;
   subject?: string;
+  editable?: boolean;
+  profileId?: string | null;
+  onIdentityChange?: (next: CoverLetterIdentity) => void;
 }) {
   const labels = coverLetterLabels(locale);
   const recipient = recipientLines(meta);
@@ -331,18 +427,38 @@ export function ModernCoverLetterPreview({
   const color =
     normalizePrimaryColor(primaryColor) ?? DEFAULT_PRIMARY_COLOR;
   const subjectLine = subject.trim() || meta.subject?.trim() || "";
+  const canEdit = Boolean(editable && onIdentityChange);
+
+  function commit(next: CoverLetterIdentity) {
+    onIdentityChange?.(next);
+  }
 
   return (
     <article
       className="flex w-full overflow-hidden bg-white text-neutral-900"
       style={resumeThemeCssVars(color)}
     >
-      <aside className="cover-letter-theme-sidebar w-[30%] shrink-0 space-y-5 px-4 py-7">
+      <aside className="cover-letter-theme-sidebar w-[30%] shrink-0 space-y-6 px-5 py-8">
         <div className="flex justify-center">
-          <Photo url={identity.photoUrl} name={identity.fullName} size="lg" />
+          {canEdit && profileId ? (
+            <ProfilePhotoSlot
+              profileId={profileId}
+              initialPhotoUrl={identity.photoUrl}
+              editable
+              variant="modern"
+              onChanged={(photoUrl) =>
+                commit({
+                  ...identity,
+                  photoUrl: photoUrl || undefined,
+                })
+              }
+            />
+          ) : (
+            <Photo url={identity.photoUrl} name={identity.fullName} size="lg" />
+          )}
         </div>
 
-        <section className="space-y-2 border-t border-white/25 pt-4">
+        <section className="space-y-2.5 border-t border-white/25 pt-5">
           <SidebarHeading>{labels.attentionOf}</SidebarHeading>
           <div className="space-y-0.5 text-[11px] leading-snug opacity-90">
             <RecipientNameTitle
@@ -365,7 +481,7 @@ export function ModernCoverLetterPreview({
           </div>
         </section>
 
-        <section className="space-y-2 border-t border-white/25 pt-4">
+        <section className="space-y-2.5 border-t border-white/25 pt-5">
           <SidebarHeading>{labels.from}</SidebarHeading>
           <div className="space-y-0.5 text-[11px] leading-snug opacity-90">
             <p className="font-semibold opacity-100">{identity.fullName}</p>
@@ -373,17 +489,17 @@ export function ModernCoverLetterPreview({
           </div>
         </section>
 
-        <section className="space-y-2 border-t border-white/25 pt-4">
+        <section className="space-y-2.5 border-t border-white/25 pt-5">
           <SidebarHeading>{labels.date}</SidebarHeading>
-          <p className="text-[11px] opacity-90">
+          <p className="text-[11px] leading-snug opacity-90">
             {formatDate(meta.letterDate, locale)}
           </p>
         </section>
 
         {identity.links?.length ? (
-          <section className="space-y-2 border-t border-white/25 pt-4">
+          <section className="space-y-2.5 border-t border-white/25 pt-5">
             <SidebarHeading>{labels.followMe}</SidebarHeading>
-            <ul className="space-y-1.5 text-[11px] leading-snug opacity-90">
+            <ul className="space-y-1 text-[11px] leading-snug opacity-90">
               {identity.links.map((link) => (
                 <li key={link.url} className="break-all">
                   <span className="font-semibold opacity-100">
@@ -397,32 +513,81 @@ export function ModernCoverLetterPreview({
         ) : null}
       </aside>
 
-      <div className="min-w-0 flex-1 px-7 py-7">
-        <header className="mb-6 flex items-start justify-between gap-4 border-b border-neutral-200 pb-4">
-          <div className="min-w-0">
-            <h1 className="cover-letter-theme-accent text-xl font-bold tracking-wide uppercase">
-              {identity.fullName}
-            </h1>
-            {identity.headline ? (
-              <p className="mt-0.5 text-xs tracking-wide text-neutral-400 uppercase">
-                {identity.headline}
-              </p>
-            ) : null}
+      <div className="min-w-0 flex-1 px-8 py-8">
+        <header className="mb-8 flex items-start justify-between gap-6 border-b border-neutral-200 pb-5">
+          <div className="min-w-0 space-y-1.5">
+            <InlineText
+              as="h1"
+              className="cover-letter-theme-accent text-xl font-bold tracking-wide uppercase"
+              value={identity.fullName}
+              editable={canEdit}
+              placeholder="Your name"
+              onCommit={(fullName) =>
+                commit({ ...identity, fullName: fullName || "Your Name" })
+              }
+            />
+            <InlineText
+              as="p"
+              className="text-xs tracking-wide text-neutral-400 uppercase"
+              value={identity.headline ?? ""}
+              editable={canEdit}
+              emptyLabel="Add a title"
+              placeholder="Title"
+              onCommit={(headline) =>
+                commit({
+                  ...identity,
+                  headline: headline || undefined,
+                })
+              }
+            />
           </div>
-          <div className="shrink-0 space-y-1.5 text-right text-[11px] text-neutral-500">
-            {identity.location ? (
-              <p className="border-b border-neutral-100 pb-1">
-                {identity.location}
-              </p>
-            ) : null}
-            {identity.phone ? (
-              <p className="border-b border-neutral-100 pb-1">{identity.phone}</p>
-            ) : null}
-            {identity.email ? <p>{identity.email}</p> : null}
+          <div className="flex shrink-0 flex-col items-end gap-0 text-right text-[11px] leading-snug text-neutral-500">
+            <InlineText
+              as="p"
+              className="leading-snug"
+              value={identity.location ?? ""}
+              editable={canEdit}
+              emptyLabel="location"
+              placeholder="City"
+              onCommit={(location) =>
+                commit({
+                  ...identity,
+                  location: location || undefined,
+                })
+              }
+            />
+            <InlineText
+              as="p"
+              className="leading-snug"
+              value={identity.phone ?? ""}
+              editable={canEdit}
+              emptyLabel="phone"
+              placeholder="Phone"
+              onCommit={(phone) =>
+                commit({
+                  ...identity,
+                  phone: phone || undefined,
+                })
+              }
+            />
+            <InlineText
+              as="p"
+              className="leading-snug"
+              value={identity.email ?? ""}
+              editable={canEdit}
+              emptyLabel="email"
+              placeholder="email@example.com"
+              onCommit={(email) =>
+                commit({
+                  ...identity,
+                  email: email || undefined,
+                })
+              }
+            />
           </div>
         </header>
 
-        <h2 className="cover-letter-theme-accent mb-3 text-sm font-bold tracking-[0.12em] uppercase">
+        <h2 className="cover-letter-theme-accent mb-4 text-sm font-bold tracking-[0.12em] uppercase">
           {labels.letterTitle}
         </h2>
 
@@ -430,7 +595,7 @@ export function ModernCoverLetterPreview({
           <SubjectLine
             label={labels.subject}
             subject={subjectLine}
-            className="mb-4 text-sm text-neutral-800 [&_a]:underline [&_em]:italic [&_strong]:font-semibold"
+            className="mb-5 text-sm text-neutral-800 [&_a]:underline [&_em]:italic [&_strong]:font-semibold"
             labelClassName="font-semibold"
           />
         ) : null}

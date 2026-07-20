@@ -2,10 +2,12 @@
 
 import type { ReactNode, FormEvent } from "react";
 import Link from "next/link";
+import { SquareArrowOutUpRight } from "lucide-react";
 import { ApplicationStatus } from "@prisma/client";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 export type ApplicationFormState = {
   title: string;
@@ -53,7 +55,6 @@ type ApplicationFormProps = {
   resumesLoading?: boolean;
   busy?: boolean;
   error?: string | null;
-  linkedResumeTitle?: string | null;
   linkedResumeUnavailable?: boolean;
   showLinkedResumeOpenLink?: boolean;
   idPrefix?: string;
@@ -69,7 +70,6 @@ export function ApplicationForm({
   resumesLoading = false,
   busy = false,
   error = null,
-  linkedResumeTitle = null,
   linkedResumeUnavailable = false,
   showLinkedResumeOpenLink = false,
   idPrefix = "app",
@@ -176,63 +176,77 @@ export function ApplicationForm({
         <label htmlFor={`${idPrefix}-resume`} className="text-xs text-muted">
           Linked resume (optional)
         </label>
-        <select
-          id={`${idPrefix}-resume`}
-          value={form.linkedResumeId}
-          onChange={(e) => onChange("linkedResumeId", e.target.value)}
-          disabled={busy || resumesLoading}
-          className="h-10 w-full rounded-md border border-border bg-card px-3 text-sm"
-        >
-          <option value="">
-            {resumesLoading
-              ? "Loading resumes…"
-              : resumes.length
-                ? "No linked resume"
-                : "No resumes available"}
-          </option>
-          {resumes.map((resume) => (
-            <option key={resume.id} value={resume.id}>
-              {resume.title}
+        <div className="flex gap-2">
+          <select
+            id={`${idPrefix}-resume`}
+            value={form.linkedResumeId}
+            onChange={(e) => onChange("linkedResumeId", e.target.value)}
+            disabled={busy || resumesLoading}
+            className="h-10 min-w-0 flex-1 rounded-md border border-border bg-card px-3 text-sm"
+          >
+            <option value="">
+              {resumesLoading
+                ? "Loading resumes…"
+                : resumes.length
+                  ? "No linked resume"
+                  : "No resumes available"}
             </option>
-          ))}
-        </select>
-      </div>
-
-      {linkedResumeTitle ? (
-        <div className="text-xs text-muted">
-          <span>Linked resume: {linkedResumeTitle}. </span>
-          {showLinkedResumeOpenLink && form.linkedResumeId ? (
-            <Link
-              href={`/workspace/${form.linkedResumeId}`}
-              className="text-accent hover:underline"
-            >
-              Open resume
-            </Link>
+            {resumes.map((resume) => (
+              <option key={resume.id} value={resume.id}>
+                {resume.title}
+              </option>
+            ))}
+          </select>
+          {showLinkedResumeOpenLink ? (
+            form.linkedResumeId ? (
+              <Link
+                href={`/workspace/${form.linkedResumeId}`}
+                target="_blank"
+                rel="noreferrer"
+                title="Open resume in new tab"
+                aria-label="Open resume in new tab"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  "h-10 w-10 shrink-0 px-0",
+                )}
+              >
+                <SquareArrowOutUpRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-10 w-10 shrink-0 px-0"
+                disabled
+                title="Select a resume to open"
+                aria-label="Select a resume to open"
+              >
+                <SquareArrowOutUpRight className="h-4 w-4" />
+              </Button>
+            )
           ) : null}
         </div>
-      ) : null}
+      </div>
 
       {linkedResumeUnavailable ? (
         <p className="text-xs text-muted">Resume unavailable</p>
-      ) : null}
-
-      {form.jobUrl ? (
-        <div className="text-xs text-muted">
-          <a
-            href={form.jobUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-accent hover:underline"
-          >
-            Open job posting
-          </a>
-        </div>
       ) : null}
 
       {error ? <p className="text-sm text-danger">{error}</p> : null}
 
       {footer ?? (
         <div className="flex justify-end gap-2">
+          {form.jobUrl.trim() ? (
+            <a
+              href={form.jobUrl.trim()}
+              target="_blank"
+              rel="noreferrer"
+              className={cn(buttonVariants({ variant: "outline" }))}
+            >
+              Open job posting
+            </a>
+          ) : null}
           <Button type="submit" disabled={busy}>
             {busy ? "Saving…" : "Save application"}
           </Button>

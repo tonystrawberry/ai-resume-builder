@@ -1,24 +1,15 @@
 import { NextResponse } from "next/server";
-import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { badRequest, notFound, unauthorized } from "@/lib/api-error";
-import { getOrCreateCoverLetter } from "@/lib/applications/cover-letter";
-import { parseCoverLetterIdentity } from "@/lib/cover-letter/identity";
-import { getOrCreateCoverLetterPresentation } from "@/lib/cover-letter/presentations";
 import {
-  isCoverLetterTemplateId,
-  type CoverLetterTemplateId,
-} from "@/lib/cover-letter/templates";
+  buildCoverLetterShareSnapshot,
+  coverLetterShareDataJson,
+} from "@/lib/cover-letter/share-snapshot";
 import {
   publicCoverLetterSharePath,
   publicCoverLetterShareUrl,
-  type CoverLetterShareSnapshot,
 } from "@/lib/cover-letter/share";
 import { isResumeLocale } from "@/lib/resume/locales";
-import {
-  DEFAULT_PRIMARY_COLOR,
-  normalizePrimaryColor,
-} from "@/lib/resume/theme-color";
 import { createShareToken } from "@/lib/share/tokens";
 import { requestOrigin } from "@/lib/share/serialize";
 import { prisma } from "@/lib/db";
@@ -35,60 +26,29 @@ export async function POST(req: Request, { params }: Params) {
     label?: string;
   };
 
-  const result = await getOrCreateCoverLetter(session.user.id, applicationId);
-  if (!result) return notFound("Application not found");
+  if (body.locale && !isResumeLocale(body.locale)) {
+    return badRequest("Invalid locale");
+  }
 
-  const coverLetter = result.coverLetter;
-  const locale = body.locale || coverLetter.selectedLocale || coverLetter.sourceLocale;
-  if (!isResumeLocale(locale)) return badRequest("Invalid locale");
-
-  const templateId: CoverLetterTemplateId = isCoverLetterTemplateId(
-    coverLetter.templateId,
-  )
-    ? coverLetter.templateId
-    : "classic";
-  const primaryColor =
-    normalizePrimaryColor(coverLetter.primaryColor) ?? DEFAULT_PRIMARY_COLOR;
-
-  const presentation = await getOrCreateCoverLetterPresentation({
-    coverLetterId: coverLetter.id,
-    sourceLocale: coverLetter.sourceLocale,
-    sourceVersion: coverLetter.contentVersion,
-    sourceSubject: coverLetter.subject,
-    sourceContent: coverLetter.content,
-    locale,
+  const built = await buildCoverLetterShareSnapshot({
+    userId: session.user.id,
+    applicationId,
+    locale: body.locale,
   });
-
-  const snapshot: CoverLetterShareSnapshot = {
-    content: presentation.content,
-    subject: presentation.subject,
-    templateId,
-    primaryColor,
-    locale,
-    identity: parseCoverLetterIdentity(result.application.linkedResume?.data),
-    meta: {
-      companyName: result.application.companyName,
-      jobTitle: result.application.title,
-      letterDate: result.application.appliedAt?.toISOString() ?? null,
-      recipientName: coverLetter.recipientName,
-      recipientTitle: coverLetter.recipientTitle,
-      recipientEmail: coverLetter.recipientEmail,
-      recipientOrganization:
-        coverLetter.recipientOrganization ?? result.application.companyName,
-      recipientAddress: coverLetter.recipientAddress,
-    },
-  };
+  if (!built) {
+    return notFound("Application not found");
+  }
 
   const token = createShareToken();
   const link = await prisma.sharedCoverLetterLink.create({
     data: {
-      coverLetterId: coverLetter.id,
+      coverLetterId: built.coverLetterId,
       token,
-      locale,
-      templateId,
-      primaryColor,
-      data: snapshot as unknown as Prisma.InputJsonValue,
-      sourceVersion: presentation.sourceVersion,
+      locale: built.snapshot.locale,
+      templateId: built.snapshot.templateId,
+      primaryColor: built.snapshot.primaryColor,
+      data: coverLetterShareDataJson(built.snapshot),
+      sourceVersion: built.sourceVersion,
       label: body.label?.trim() || null,
       status: "active",
     },

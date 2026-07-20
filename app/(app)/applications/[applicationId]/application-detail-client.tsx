@@ -440,6 +440,31 @@ export function ApplicationDetailClient({
     }
   }
 
+  async function saveCoverIdentity(next: CoverLetterIdentity) {
+    setCoverIdentity(next);
+    setCoverError(null);
+    try {
+      const res = await fetch(
+        `/api/applications/${application.id}/cover-letter`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identity: next }),
+        },
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setCoverError(json.error?.message || "Could not save identity");
+        return;
+      }
+      if (json.identity) {
+        setCoverIdentity(json.identity as CoverLetterIdentity);
+      }
+    } catch {
+      setCoverError("Network error");
+    }
+  }
+
   async function confirmDelete() {
     if (busy) return;
     setBusy(true);
@@ -539,7 +564,6 @@ export function ApplicationDetailClient({
             resumesLoading={resumesLoading}
             busy={busy}
             error={error}
-            linkedResumeTitle={application.linkedResumeTitle}
             linkedResumeUnavailable={linkedResumeUnavailable}
             showLinkedResumeOpenLink
             idPrefix="detail"
@@ -591,6 +615,8 @@ export function ApplicationDetailClient({
                 onLocaleChange={(next) => void changeCoverLocale(next)}
                 translating={coverTranslating}
                 identity={coverIdentity}
+                profileId={application.linkedResumeId}
+                onIdentityChange={(next) => void saveCoverIdentity(next)}
                 meta={coverMeta}
                 onMetaChange={(patch) =>
                   setCoverMeta((prev) => ({ ...prev, ...patch }))

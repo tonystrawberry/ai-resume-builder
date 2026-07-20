@@ -41,7 +41,7 @@ export function CoverLetterChat({
   currentContent: string;
   onSuggestionApplied: (content: string) => void;
 }) {
-  const { messages, input, setInput, handleSubmit, isLoading, error } =
+  const { messages, input, setInput, handleSubmit, isLoading, error, setMessages } =
     useChat({
       id: chatId,
       api: `/api/applications/${applicationId}/cover-letter/chat`,
@@ -80,6 +80,44 @@ export function CoverLetterChat({
     el.scrollTop = el.scrollHeight;
   }, [messages, latestSuggestion, isLoading]);
 
+  async function dismissSuggestionOnServer() {
+    const res = await fetch(
+      `/api/applications/${applicationId}/cover-letter/chat`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "dismiss-suggestion" }),
+      },
+    );
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+    if (Array.isArray(json.messages)) {
+      setMessages(
+        json.messages.map(
+          (
+            m: { id?: string; role: string; content: string },
+            i: number,
+          ) => ({
+            id: m.id?.trim() ? m.id : `${chatId}-${m.role}-${i}`,
+            role: m.role as "user" | "assistant" | "system" | "data",
+            content: m.content,
+          }),
+        ),
+      );
+    }
+  }
+
+  async function rejectSuggestion() {
+    if (!suggestionKey) return;
+    setDismissedKey(suggestionKey);
+    setApplyError(null);
+    try {
+      await dismissSuggestionOnServer();
+    } catch {
+      // Local dismiss already applied; refresh would still show until retry
+    }
+  }
+
   async function applySuggestion() {
     if (!latestSuggestion) return;
     setApplyBusy(true);
@@ -114,6 +152,7 @@ export function CoverLetterChat({
       }
       onSuggestionApplied(json.coverLetter.content as string);
       setDismissedKey(suggestionKey);
+      await dismissSuggestionOnServer();
     } catch {
       setApplyError("Network error");
     } finally {
@@ -214,7 +253,7 @@ export function CoverLetterChat({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => setDismissedKey(suggestionKey)}
+              onClick={() => void rejectSuggestion()}
               disabled={applyBusy}
             >
               Reject

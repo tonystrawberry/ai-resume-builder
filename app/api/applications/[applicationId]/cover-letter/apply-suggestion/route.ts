@@ -2,8 +2,14 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { badRequest, notFound, unauthorized } from "@/lib/api-error";
 import { coverLetterApplySuggestionSchema } from "@/lib/applications/cover-letter-schema";
-import { getOrCreateCoverLetter } from "@/lib/applications/cover-letter";
-import { applyCoverLetterPatch } from "@/lib/ai/cover-letter-chat";
+import {
+  getOrCreateCoverLetter,
+  saveCoverLetterMessages,
+} from "@/lib/applications/cover-letter";
+import {
+  applyCoverLetterPatch,
+  clearLatestSuggestionFromMessages,
+} from "@/lib/ai/cover-letter-chat";
 import {
   getOrCreateCoverLetterPresentation,
   saveCoverLetterLocaleEdit,
@@ -12,6 +18,8 @@ import { isResumeLocale } from "@/lib/resume/locales";
 import { prisma } from "@/lib/db";
 
 type Params = { params: Promise<{ applicationId: string }> };
+
+type StoredMessage = { id?: string; role: string; content: string };
 
 export async function POST(req: Request, { params }: Params) {
   const session = await auth();
@@ -68,6 +76,14 @@ export async function POST(req: Request, { params }: Params) {
     sourceVersion: result.coverLetter.contentVersion,
     content: nextContent,
   });
+
+  const messages = Array.isArray(result.conversation.messages)
+    ? (result.conversation.messages as StoredMessage[])
+    : [];
+  await saveCoverLetterMessages(
+    result.conversation.id,
+    clearLatestSuggestionFromMessages(messages),
+  );
 
   const updated = await prisma.coverLetter.findUniqueOrThrow({
     where: { id: result.coverLetter.id },

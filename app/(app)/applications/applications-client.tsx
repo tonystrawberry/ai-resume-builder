@@ -392,6 +392,16 @@ export function ApplicationsClient({
                 >
                   Cancel
                 </Button>
+                {form.jobUrl.trim() ? (
+                  <a
+                    href={form.jobUrl.trim()}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={buttonVariants({ variant: "outline" })}
+                  >
+                    Open job posting
+                  </a>
+                ) : null}
                 <Button type="submit" disabled={busy}>
                   {busy ? "Saving…" : "Save application"}
                 </Button>

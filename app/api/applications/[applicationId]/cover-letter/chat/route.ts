@@ -9,6 +9,7 @@ import {
 } from "@/lib/applications/cover-letter";
 import {
   buildCoverLetterSystemPrompt,
+  clearLatestSuggestionFromMessages,
   offlineCoverLetterReply,
 } from "@/lib/ai/cover-letter-chat";
 import { getChatModel, hasLlmKey } from "@/lib/ai/models";
@@ -136,4 +137,29 @@ export async function POST(req: Request, { params }: Params) {
       return "Model request failed";
     },
   });
+}
+
+/** Persist Reject / clear pending suggestion fences from the last assistant reply. */
+export async function PATCH(req: Request, { params }: Params) {
+  const session = await auth();
+  if (!session?.user?.id) return unauthorized();
+  const { applicationId } = await params;
+
+  const body = (await req.json().catch(() => ({}))) as { action?: string };
+  if (body.action !== "dismiss-suggestion") {
+    return badRequest("Unsupported action");
+  }
+
+  const result = await getOrCreateCoverLetter(session.user.id, applicationId);
+  if (!result) return notFound("Application not found");
+
+  const messages = Array.isArray(result.conversation.messages)
+    ? (result.conversation.messages as ChatMessage[])
+    : [];
+  const nextMessages = clearLatestSuggestionFromMessages(
+    normalizeMessages(messages, result.conversation.id),
+  );
+  await saveCoverLetterMessages(result.conversation.id, nextMessages);
+
+  return NextResponse.json({ id: result.conversation.id, messages: nextMessages });
 }

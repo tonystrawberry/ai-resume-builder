@@ -23,6 +23,7 @@ import {
   normalizePrimaryColor,
 } from "@/lib/resume/theme-color";
 import { cn } from "@/lib/utils";
+import { printCoverLetter } from "@/lib/cover-letter/print";
 
 export function CoverLetterEditor({
   applicationId,
@@ -39,6 +40,8 @@ export function CoverLetterEditor({
   onLocaleChange,
   translating = false,
   identity,
+  profileId = null,
+  onIdentityChange,
   meta,
   onMetaChange,
   onSaveRecipient,
@@ -62,6 +65,8 @@ export function CoverLetterEditor({
   onLocaleChange: (locale: ResumeLocaleId) => void | Promise<void>;
   translating?: boolean;
   identity: CoverLetterIdentity;
+  profileId?: string | null;
+  onIdentityChange: (next: CoverLetterIdentity) => void | Promise<void>;
   meta: CoverLetterMeta;
   onMetaChange: (patch: Partial<CoverLetterMeta>) => void;
   onSaveRecipient: (meta: CoverLetterMeta) => void | Promise<void>;
@@ -241,8 +246,7 @@ export function CoverLetterEditor({
             locale={locale}
             disabled={busy || translating}
             onPrint={() => {
-              setFullscreenPreview(true);
-              window.setTimeout(() => window.print(), 150);
+              printCoverLetter();
             }}
           />
           <Button
@@ -357,7 +361,10 @@ export function CoverLetterEditor({
             </div>
           </div>
           <p className="mt-2 text-xs text-muted">
-            « {labels.from} » uses the linked resume identity.
+            Click the banner fields to edit your sender details.
+            {!profileId
+              ? " Link a resume to enable photo upload."
+              : null}
           </p>
         </div>
       ) : null}
@@ -398,10 +405,13 @@ export function CoverLetterEditor({
               templateId={templateId}
               locale={locale}
               primaryColor={color}
+              editable
+              profileId={profileId}
+              onIdentityChange={(next) => void onIdentityChange(next)}
             />
           </div>
           {!content.trim() ? (
-            <p className="mx-auto mt-3 max-w-[210mm] text-center text-xs text-muted">
+            <p className="mx-auto mt-3 max-w-[210mm] text-center text-xs text-muted print:hidden">
               Ask the assistant for a draft, or open Edit markdown.
             </p>
           ) : null}

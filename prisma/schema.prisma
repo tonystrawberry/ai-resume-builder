@@ -168,6 +168,8 @@ model CoverLetter {
   sourceLocale          String   @default("en")
   selectedLocale        String   @default("en")
   contentVersion        Int      @default(1)
+  /// Sender identity override (name, headline, contact, photo, links). Falls back to linked resume.
+  identity              Json?
   recipientName         String?
   recipientTitle        String?
   recipientEmail        String?

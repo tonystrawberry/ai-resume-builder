@@ -18,6 +18,9 @@ export function CoverLetterFrame({
   templateId,
   locale,
   primaryColor,
+  editable = false,
+  profileId,
+  onIdentityChange,
 }: {
   content: string;
   subject: string;
@@ -26,6 +29,9 @@ export function CoverLetterFrame({
   templateId: CoverLetterTemplateId;
   locale: string;
   primaryColor: string;
+  editable?: boolean;
+  profileId?: string | null;
+  onIdentityChange?: (next: CoverLetterIdentity) => void;
 }) {
   if (templateId === "modern") {
     return (
@@ -36,6 +42,9 @@ export function CoverLetterFrame({
         primaryColor={primaryColor}
         locale={locale}
         subject={subject}
+        editable={editable}
+        profileId={profileId}
+        onIdentityChange={onIdentityChange}
       />
     );
   }
@@ -48,6 +57,9 @@ export function CoverLetterFrame({
       primaryColor={primaryColor}
       locale={locale}
       subject={subject}
+      editable={editable}
+      profileId={profileId}
+      onIdentityChange={onIdentityChange}
     />
   );
 }

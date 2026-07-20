@@ -149,6 +149,34 @@ export function extractCoverLetterSuggestion(
   };
 }
 
+/** Remove suggestion fences so Reject/Apply stay dismissed after reload. */
+export function stripCoverLetterSuggestionFences(text: string): string {
+  return text
+    .replace(/```cover-letter-patch\s*[\s\S]*?```/gi, "")
+    .replace(/```cover-letter-suggestion\s*[\s\S]*?```/gi, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+export function clearLatestSuggestionFromMessages<
+  T extends { role: string; content: string },
+>(messages: T[]): T[] {
+  const next = messages.map((m) => ({ ...m }));
+  for (let i = next.length - 1; i >= 0; i -= 1) {
+    if (
+      next[i].role === "assistant" &&
+      extractCoverLetterSuggestion(next[i].content)
+    ) {
+      next[i] = {
+        ...next[i],
+        content: stripCoverLetterSuggestionFences(next[i].content),
+      };
+      break;
+    }
+  }
+  return next;
+}
+
 /** Apply a find/replace patch to letter body. Returns null if FIND is missing. */
 export function applyCoverLetterPatch(
   content: string,

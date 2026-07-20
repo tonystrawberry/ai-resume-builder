@@ -89,6 +89,7 @@ export async function updateCoverLetter(
     content?: string;
     templateId?: string;
     primaryColor?: string;
+    identity?: Prisma.InputJsonValue;
     recipientName?: string | null;
     recipientTitle?: string | null;
     recipientEmail?: string | null;
@@ -104,6 +105,7 @@ export async function updateCoverLetter(
       ...(data.primaryColor !== undefined
         ? { primaryColor: data.primaryColor }
         : {}),
+      ...(data.identity !== undefined ? { identity: data.identity } : {}),
       ...(data.recipientName !== undefined
         ? { recipientName: data.recipientName }
         : {}),

@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { CoverLetterFrame } from "@/components/applications/cover-letter-frame";
 import { APP_NAME } from "@/lib/brand";
+import { printCoverLetter } from "@/lib/cover-letter/print";
 import type { CoverLetterShareSnapshot } from "@/lib/cover-letter/share";
 import { localeLanguageName } from "@/lib/resume/locales";
 
@@ -41,7 +42,7 @@ export function PublicCoverLetterView({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => window.print()}
+            onClick={() => printCoverLetter()}
           >
             Print / Save PDF
           </Button>

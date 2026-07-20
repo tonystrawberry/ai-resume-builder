@@ -15,6 +15,21 @@ const optionalTrimmed = z
     return t.length ? t : null;
   });
 
+const identityLinkSchema = z.object({
+  label: z.string().max(100).optional(),
+  url: z.string().trim().min(1).max(2000),
+});
+
+export const coverLetterIdentitySchema = z.object({
+  fullName: z.string().trim().min(1).max(200),
+  headline: z.string().max(300).optional(),
+  email: z.string().max(320).optional(),
+  phone: z.string().max(80).optional(),
+  location: z.string().max(300).optional(),
+  photoUrl: z.string().max(2000).optional(),
+  links: z.array(identityLinkSchema).max(20).optional(),
+});
+
 export const coverLetterContentSchema = z
   .object({
     content: z.string().max(50_000).optional(),
@@ -28,6 +43,7 @@ export const coverLetterContentSchema = z
       .refine(isValidPrimaryColor, "Invalid primaryColor")
       .optional(),
     locale: z.string().refine(isResumeLocale, "Invalid locale").optional(),
+    identity: coverLetterIdentitySchema.optional(),
     recipientName: optionalTrimmed,
     recipientTitle: optionalTrimmed,
     recipientEmail: optionalTrimmed,
@@ -51,6 +67,7 @@ export const coverLetterContentSchema = z
       v.templateId !== undefined ||
       v.primaryColor !== undefined ||
       v.locale !== undefined ||
+      v.identity !== undefined ||
       v.recipientName !== undefined ||
       v.recipientTitle !== undefined ||
       v.recipientEmail !== undefined ||

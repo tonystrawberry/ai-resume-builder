@@ -6,7 +6,7 @@ import {
   getOrCreateCoverLetter,
   updateCoverLetter,
 } from "@/lib/applications/cover-letter";
-import { parseCoverLetterIdentity } from "@/lib/cover-letter/identity";
+import { resolveCoverLetterIdentity } from "@/lib/cover-letter/identity";
 import {
   getOrCreateCoverLetterPresentation,
   saveCoverLetterLocaleEdit,
@@ -119,7 +119,11 @@ export async function GET(_req: Request, { params }: Params) {
       updatedAt: coverLetter.updatedAt.toISOString(),
     },
     conversationId: conversation.id,
-    identity: parseCoverLetterIdentity(application.linkedResume?.data),
+    identity: resolveCoverLetterIdentity(
+      coverLetter.identity,
+      application.linkedResume?.data,
+    ),
+    linkedResumeId: application.linkedResumeId,
     meta: serializeMeta(coverLetter, application),
   });
 }
@@ -148,6 +152,7 @@ export async function PATCH(req: Request, { params }: Params) {
   if (
     data.templateId !== undefined ||
     data.primaryColor !== undefined ||
+    data.identity !== undefined ||
     data.recipientName !== undefined ||
     data.recipientTitle !== undefined ||
     data.recipientEmail !== undefined ||
@@ -157,6 +162,7 @@ export async function PATCH(req: Request, { params }: Params) {
     const updated = await updateCoverLetter(coverLetter.id, {
       templateId: data.templateId,
       primaryColor: data.primaryColor,
+      identity: data.identity,
       recipientName: data.recipientName,
       recipientTitle: data.recipientTitle,
       recipientEmail: data.recipientEmail,
@@ -222,6 +228,10 @@ export async function PATCH(req: Request, { params }: Params) {
       recipientAddress: coverLetter.recipientAddress,
       updatedAt: coverLetter.updatedAt.toISOString(),
     },
+    identity: resolveCoverLetterIdentity(
+      coverLetter.identity,
+      result.application.linkedResume?.data,
+    ),
     meta: serializeMeta(coverLetter, result.application),
   });
 }

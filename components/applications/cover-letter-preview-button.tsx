@@ -15,6 +15,7 @@ import type {
   CoverLetterMeta,
 } from "@/lib/cover-letter/identity";
 import type { CoverLetterTemplateId } from "@/lib/cover-letter/templates";
+import { printCoverLetter } from "@/lib/cover-letter/print";
 
 export function FullscreenCoverLetterPreviewButton({
   open,
@@ -70,7 +71,13 @@ export function FullscreenCoverLetterPreviewButton({
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => window.print()}
+                onClick={() => {
+                  const scroller = document.querySelector(
+                    ".a4-fullscreen-preview",
+                  );
+                  if (scroller instanceof HTMLElement) scroller.scrollTop = 0;
+                  printCoverLetter();
+                }}
               >
                 Print / PDF
               </Button>
