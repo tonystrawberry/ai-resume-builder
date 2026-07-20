@@ -7,6 +7,8 @@ export type ApplicationContext = {
   description: string | null;
   companyName: string | null;
   jobUrl: string | null;
+  /** AI-parsed job posting from jobUrl (cached on the application). */
+  jobPostingText: string | null;
   linkedResume: {
     id: string;
     title: string;
@@ -137,15 +139,26 @@ export async function saveCoverLetterMessages(
   });
 }
 
-export function buildApplicationContext(
-  application: NonNullable<Awaited<ReturnType<typeof getOwnedApplication>>>,
-): ApplicationContext {
+export function buildApplicationContext(application: {
+  id: string;
+  title: string;
+  description: string | null;
+  companyName: string | null;
+  jobUrl: string | null;
+  jobPostingText?: string | null;
+  linkedResume: {
+    id: string;
+    title: string;
+    data: unknown;
+  } | null;
+}): ApplicationContext {
   return {
     applicationId: application.id,
     title: application.title,
     description: application.description,
     companyName: application.companyName,
     jobUrl: application.jobUrl,
+    jobPostingText: application.jobPostingText ?? null,
     linkedResume: application.linkedResume
       ? {
           id: application.linkedResume.id,

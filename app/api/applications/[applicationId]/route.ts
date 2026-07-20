@@ -15,6 +15,8 @@ function toItem(
     description: string | null;
     companyName: string | null;
     jobUrl: string | null;
+    jobPostingText?: string | null;
+    jobPostingParsedAt?: Date | null;
     status: ApplicationStatus;
     appliedAt: Date | null;
     linkedResumeId: string | null;
@@ -29,6 +31,8 @@ function toItem(
     description: app.description,
     companyName: app.companyName,
     jobUrl: app.jobUrl,
+    jobPostingText: app.jobPostingText ?? null,
+    jobPostingParsedAt: app.jobPostingParsedAt?.toISOString() ?? null,
     status: app.status,
     appliedAt: app.appliedAt?.toISOString() ?? null,
     linkedResumeId: app.linkedResumeId,
@@ -94,6 +98,9 @@ export async function PATCH(req: Request, { params }: Params) {
     }
   }
 
+  const jobUrlChanging =
+    data.jobUrl !== undefined && data.jobUrl !== existing.jobUrl;
+
   const updated = await prisma.jobApplication.update({
     where: { id: existing.id },
     data: {
@@ -105,6 +112,14 @@ export async function PATCH(req: Request, { params }: Params) {
       appliedAt: data.appliedAt === undefined ? undefined : data.appliedAt,
       linkedResumeId:
         data.linkedResumeId === undefined ? undefined : data.linkedResumeId,
+      // Re-parse on next cover-letter chat when the URL changes or is cleared.
+      ...(jobUrlChanging
+        ? {
+            jobPostingText: null,
+            jobPostingParsedUrl: null,
+            jobPostingParsedAt: null,
+          }
+        : {}),
     },
     include: { linkedResume: { select: { id: true, title: true } } },
   });

@@ -67,6 +67,8 @@ export type ApplicationDetail = {
   description: string | null;
   companyName: string | null;
   jobUrl: string | null;
+  jobPostingText: string | null;
+  jobPostingParsedAt: string | null;
   status: ApplicationStatus;
   appliedAt: string | null;
   linkedResumeId: string | null;
@@ -158,6 +160,14 @@ export function ApplicationDetailClient({
   const [chatMessages, setChatMessages] = useState<
     Array<{ id: string; role: string; content: string }>
   >([]);
+  const [jobPostingText, setJobPostingText] = useState(
+    initialApplication.jobPostingText,
+  );
+  const [jobPostingParsedAt, setJobPostingParsedAt] = useState(
+    initialApplication.jobPostingParsedAt,
+  );
+  const [jobPostingParsing, setJobPostingParsing] = useState(false);
+  const [jobPostingError, setJobPostingError] = useState<string | null>(null);
 
   const dirty =
     !formsEqual(form, savedForm) || !personalEqual(personal, savedPersonal);
@@ -292,6 +302,49 @@ export function ApplicationDetailClient({
     router.replace(url, { scroll: false });
   }
 
+  async function parseJobPosting(force = false) {
+    if (jobPostingParsing || busy) return;
+    if (!form.jobUrl.trim()) {
+      setJobPostingError("Save a job posting URL first");
+      return;
+    }
+    // Persist URL before parsing if the form has unsaved URL changes.
+    if (form.jobUrl.trim() !== (application.jobUrl ?? "")) {
+      const ok = await saveInformation();
+      if (!ok) return;
+    }
+    setJobPostingParsing(true);
+    setJobPostingError(null);
+    try {
+      const res = await fetch(
+        `/api/applications/${application.id}/job-posting`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ force }),
+        },
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setJobPostingError(
+          json.error?.message || "Could not parse job posting",
+        );
+        return;
+      }
+      setJobPostingText(json.jobPostingText ?? null);
+      setJobPostingParsedAt(json.jobPostingParsedAt ?? null);
+      setApplication((prev) => ({
+        ...prev,
+        jobPostingText: json.jobPostingText ?? null,
+        jobPostingParsedAt: json.jobPostingParsedAt ?? null,
+      }));
+    } catch {
+      setJobPostingError("Network error");
+    } finally {
+      setJobPostingParsing(false);
+    }
+  }
+
   async function saveInformation(e?: React.FormEvent) {
     e?.preventDefault();
     if (busy) return;
@@ -336,7 +389,14 @@ export function ApplicationDetailClient({
       }
 
       const saved = json.application as ApplicationDetail;
-      setApplication(saved);
+      setApplication({
+        ...saved,
+        jobPostingText: saved.jobPostingText ?? null,
+        jobPostingParsedAt: saved.jobPostingParsedAt ?? null,
+      });
+      setJobPostingText(saved.jobPostingText ?? null);
+      setJobPostingParsedAt(saved.jobPostingParsedAt ?? null);
+      setJobPostingError(null);
       const nextForm = toFormState(saved);
       setForm(nextForm);
       setSavedForm(nextForm);
@@ -658,6 +718,13 @@ export function ApplicationDetailClient({
             showLinkedResumeOpenLink
             idPrefix="detail"
             onSubmit={(e) => void saveInformation(e)}
+            jobPosting={{
+              text: jobPostingText,
+              parsedAt: jobPostingParsedAt,
+              parsing: jobPostingParsing,
+              error: jobPostingError,
+              onParse: (force) => void parseJobPosting(force),
+            }}
           />
         </div>
       </div>

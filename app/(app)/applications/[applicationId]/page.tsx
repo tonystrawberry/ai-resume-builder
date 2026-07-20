@@ -109,6 +109,8 @@ export default async function ApplicationDetailPage({
     description: app.description,
     companyName: app.companyName,
     jobUrl: app.jobUrl,
+    jobPostingText: app.jobPostingText,
+    jobPostingParsedAt: app.jobPostingParsedAt?.toISOString() ?? null,
     status: app.status,
     appliedAt: app.appliedAt?.toISOString() ?? null,
     linkedResumeId: app.linkedResumeId,

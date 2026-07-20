@@ -87,6 +87,14 @@ type ApplicationFormProps = {
     key: K,
     value: PersonalFormState[K],
   ) => void;
+  /** Cached parse of the job URL (Information tab on detail page). */
+  jobPosting?: {
+    text: string | null;
+    parsedAt: string | null;
+    parsing?: boolean;
+    error?: string | null;
+    onParse: (force?: boolean) => void;
+  };
 };
 
 export function ApplicationForm({
@@ -104,6 +112,7 @@ export function ApplicationForm({
   onSubmit,
   personal,
   onPersonalChange,
+  jobPosting,
 }: ApplicationFormProps) {
   const showPersonal = Boolean(personal && onPersonalChange);
 
@@ -171,6 +180,59 @@ export function ApplicationForm({
             placeholder="https://example.com/jobs/123"
             disabled={busy}
           />
+          {jobPosting ? (
+            <div className="rounded-md border border-border bg-surface/60 px-3 py-2 text-xs text-muted">
+              {form.jobUrl.trim() ? (
+                jobPosting.text ? (
+                  <p>
+                    <span className="font-medium text-foreground">
+                      Job posting parsed
+                    </span>
+                    {jobPosting.parsedAt
+                      ? ` · ${new Date(jobPosting.parsedAt).toLocaleString()}`
+                      : null}
+                  </p>
+                ) : (
+                  <p>
+                    Not parsed yet — parse now, or it runs automatically on the
+                    first cover-letter chat.
+                  </p>
+                )
+              ) : (
+                <p>Add a job URL to parse the posting for cover-letter drafts.</p>
+              )}
+              {jobPosting.error ? (
+                <p className="mt-1 text-danger">{jobPosting.error}</p>
+              ) : null}
+              {jobPosting.text ? (
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-foreground hover:underline">
+                    View parsed posting
+                  </summary>
+                  <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded border border-border bg-card p-2 text-[11px] leading-relaxed text-foreground">
+                    {jobPosting.text}
+                  </pre>
+                </details>
+              ) : null}
+              {form.jobUrl.trim() ? (
+                <div className="mt-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={busy || jobPosting.parsing}
+                    onClick={() => jobPosting.onParse(Boolean(jobPosting.text))}
+                  >
+                    {jobPosting.parsing
+                      ? "Parsing…"
+                      : jobPosting.text
+                        ? "Re-parse posting"
+                        : "Parse posting"}
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

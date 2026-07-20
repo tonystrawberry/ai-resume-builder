@@ -80,9 +80,20 @@ Application (for context only — do not paste as letterhead):
 - Title / role: ${ctx.title}
 - Company: ${ctx.companyName || "(not provided)"}
 - Job URL: ${ctx.jobUrl || "(not provided)"}
-- Description:
+- User notes / description:
 ${ctx.description || "(not provided)"}
-
+${
+  ctx.jobPostingText
+    ? `
+Parsed job posting (from the job URL — use this to tailor the letter):
+${ctx.jobPostingText}
+`
+    : ctx.jobUrl
+      ? `
+Parsed job posting: (not available yet — tailor from title, company, and user notes)
+`
+      : ""
+}
 Linked resume: ${
     ctx.linkedResume
       ? `${ctx.linkedResume.title} (${ctx.linkedResume.id})`

@@ -144,6 +144,10 @@ model JobApplication {
   description    String?
   companyName    String?
   jobUrl         String?
+  /// Cleaned job posting extracted from jobUrl (fetched once per URL).
+  jobPostingText      String?   @db.Text
+  jobPostingParsedUrl String?
+  jobPostingParsedAt  DateTime?
   status         ApplicationStatus @default(interested)
   appliedAt      DateTime?
   linkedResumeId String?

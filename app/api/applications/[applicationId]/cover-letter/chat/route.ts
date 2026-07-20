@@ -7,12 +7,14 @@ import {
   getOrCreateCoverLetter,
   saveCoverLetterMessages,
 } from "@/lib/applications/cover-letter";
+import { ensureJobPostingParsed } from "@/lib/applications/job-posting";
 import {
   buildCoverLetterSystemPrompt,
   clearLatestSuggestionFromMessages,
   offlineCoverLetterReply,
 } from "@/lib/ai/cover-letter-chat";
 import { getChatModel, hasLlmKey } from "@/lib/ai/models";
+import { prisma } from "@/lib/db";
 
 type Params = { params: Promise<{ applicationId: string }> };
 
@@ -73,7 +75,17 @@ export async function POST(req: Request, { params }: Params) {
   const result = await getOrCreateCoverLetter(session.user.id, applicationId);
   if (!result) return notFound("Application not found");
 
-  const ctx = buildApplicationContext(result.application);
+  // Parse job URL once and cache on the application for future drafts.
+  await ensureJobPostingParsed(applicationId);
+  const application = await prisma.jobApplication.findFirst({
+    where: { id: applicationId, userId: session.user.id },
+    include: {
+      linkedResume: { select: { id: true, title: true, data: true } },
+    },
+  });
+  if (!application) return notFound("Application not found");
+
+  const ctx = buildApplicationContext(application);
   const system = buildCoverLetterSystemPrompt(ctx, currentBody);
   const conversationId = result.conversation.id;
 
