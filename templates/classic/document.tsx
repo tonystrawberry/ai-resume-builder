@@ -129,7 +129,10 @@ export function ClassicDocument({
         {Array.from(groupSkillNamesByCategory(data.skills, locale)).map(
           ([category, names]) => (
             <Text key={category} style={{ marginTop: 3 }}>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>{category}: </Text>
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>
+                {category.toUpperCase()}
+              </Text>
+              <Text>{"   "}</Text>
               {names.join(" · ")}
             </Text>
           ),

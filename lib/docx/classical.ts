@@ -215,7 +215,7 @@ function skillBullet(category: string, names: string) {
       run("•  "),
       // Bold category label (Google Docs preserves rPr/b on TextRun)
       new TextRun({
-        text: `${category}: `,
+        text: `${category.toUpperCase()}   `,
         bold: true,
         font: FONT,
         size: SIZE_BODY,

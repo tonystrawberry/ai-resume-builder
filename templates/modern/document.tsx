@@ -153,8 +153,9 @@ export function ModernDocument({
             ([category, names]) => (
               <Text key={category} style={{ marginTop: 4 }}>
                 <Text style={{ fontFamily: "Helvetica-Bold", color: "#0f6e56" }}>
-                  {category}:{" "}
+                  {category.toUpperCase()}
                 </Text>
+                <Text>{"   "}</Text>
                 {names.join(" · ")}
               </Text>
             ),

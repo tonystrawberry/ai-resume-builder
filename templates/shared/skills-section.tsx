@@ -90,13 +90,12 @@ export function SkillsSection({
               }
             >
               <InlineText
-                className="font-semibold"
+                className="mr-3 font-semibold uppercase"
                 value={category}
                 editable={canEdit}
                 placeholder="Category"
                 onCommit={(next) => renameCategory(category, next)}
               />
-              <span className="font-semibold">: </span>
               {items.map((s, i) => (
                 <span
                   key={s.id}
