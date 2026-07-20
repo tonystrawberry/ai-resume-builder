@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { InlineText } from "@/components/preview/inline-text";
 import { PreviewDeleteButton } from "@/components/preview/preview-delete";
 import {
@@ -15,6 +16,9 @@ export { formatLinkDisplay, formatIdentityLinksForMeta } from "@/lib/resume/iden
 /**
  * Website / profile links in the resume header.
  * Supports add, edit URL, and remove when `canEdit` is true.
+ *
+ * Separators are sibling flex items (not wrapped with the link) so parent
+ * `gap-x-*` spacing matches email · phone · location.
  */
 export function IdentityLinksRow({
   links,
@@ -61,20 +65,20 @@ export function IdentityLinksRow({
   return (
     <>
       {items.map((link, index) => (
-        <span
-          key={`${link.url}-${index}`}
-          className={cn(
-            "group/link inline-flex max-w-full items-baseline gap-0.5",
-            className,
-          )}
-        >
+        <Fragment key={`${link.url}-${index}`}>
           <span
             className={cn("text-border", separatorClassName, "print:inline")}
+            aria-hidden
           >
             ·
           </span>
           {canEdit ? (
-            <>
+            <span
+              className={cn(
+                "group/link inline-flex max-w-full items-baseline gap-0.5",
+                className,
+              )}
+            >
               <InlineText
                 value={link.url}
                 editable
@@ -91,22 +95,28 @@ export function IdentityLinksRow({
                   commitLinks(items.filter((_, i) => i !== index))
                 }
               />
-            </>
+            </span>
           ) : (
             <a
               href={normalizeWebsiteUrl(link.url) || link.url}
               target="_blank"
               rel="noreferrer"
-              className="max-w-[14rem] truncate underline-offset-2 hover:underline"
+              className={cn(
+                "max-w-[14rem] truncate underline-offset-2 hover:underline",
+                className,
+              )}
             >
               {formatLinkDisplay(link)}
             </a>
           )}
-        </span>
+        </Fragment>
       ))}
       {canEdit ? (
-        <span className={cn("inline-flex items-baseline gap-0.5", className)}>
-          <span className={cn("text-border print:hidden", separatorClassName)}>
+        <Fragment>
+          <span
+            className={cn("text-border print:hidden", separatorClassName)}
+            aria-hidden
+          >
             ·
           </span>
           <InlineText
@@ -115,9 +125,10 @@ export function IdentityLinksRow({
             emptyLabel="+ Website"
             placeholder="https://yoursite.com"
             inputClassName={inputClassName}
+            className={className}
             onCommit={addUrl}
           />
-        </span>
+        </Fragment>
       ) : null}
     </>
   );
