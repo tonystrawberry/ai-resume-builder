@@ -18,6 +18,14 @@ import { WorkspaceClient } from "@/app/(app)/workspace/workspace-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -625,12 +633,21 @@ export function ApplicationDetailClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4 print:hidden">
         <div className="min-w-0 space-y-2">
-          <Link
-            href="/applications"
-            className="text-sm text-muted hover:text-foreground hover:underline"
-          >
-            ← Applications
-          </Link>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href="/applications">Applications</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="truncate max-w-[min(100%,28rem)]">
+                  {application.title}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-3xl font-semibold tracking-tight">
               {application.title}

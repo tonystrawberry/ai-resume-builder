@@ -11,6 +11,14 @@ import { FullscreenA4PreviewButton } from "@/components/preview/fullscreen-a4-pr
 import { StructuredDataEditorButton } from "@/components/preview/structured-data-editor";
 import { Card } from "@/components/ui/card";
 import { CompletenessRing } from "@/components/preview/completeness-ring";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import type { CompletenessResult } from "@/lib/resume/completeness";
 import { computeCompleteness } from "@/lib/resume/completeness";
 import { bustResumeImageUrls } from "@/lib/resume/image-urls";
@@ -292,13 +300,21 @@ export function WorkspaceClient({
     <div className="space-y-4">
       {!embedded ? (
         <div className="print:hidden">
-          <p className="text-sm text-muted">
-            <Link href="/resumes" className="hover:text-accent">
-              Resumes
-            </Link>
-            <span className="mx-1.5">/</span>
-            <span className="text-foreground">{resumeTitle}</span>
-          </p>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href="/resumes">Resumes</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="truncate max-w-[min(100%,28rem)]">
+                  {resumeTitle}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
             {resumeTitle}
           </h1>
