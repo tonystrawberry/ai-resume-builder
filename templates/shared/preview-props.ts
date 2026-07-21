@@ -10,6 +10,8 @@ export type ResumePreviewProps = {
   editable?: boolean;
   /** Click-to-edit text on the canvas (source locale only). */
   textEditable?: boolean;
+  /** CSS-blur personal identity + developed app/project names. */
+  privacyMode?: boolean;
   onMediaChanged?: () => void;
   onPatch?: ResumePatchFn;
 };

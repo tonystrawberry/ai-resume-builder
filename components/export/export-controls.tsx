@@ -17,11 +17,14 @@ export function ExportControls({
   locale,
   onLocaleChange,
   hasCriticalGaps = false,
+  hidePersonalInfo = false,
 }: {
   profileId: string;
   locale: string;
   onLocaleChange: (locale: string, data?: MasterResume) => void;
   hasCriticalGaps?: boolean;
+  /** When true, Word export redacts personal fields (PDF uses preview blur). */
+  hidePersonalInfo?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
@@ -137,6 +140,7 @@ export function ExportControls({
           profileId,
           locale,
           acknowledgeIncomplete: acknowledgeIncomplete || !hasCriticalGaps,
+          hidePersonalInfo,
         }),
       });
       if (!res.ok) {

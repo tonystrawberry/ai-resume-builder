@@ -104,6 +104,21 @@ a {
   text-decoration: none;
 }
 
+/* Privacy mode: blur personal identity / app names (preview + print PDF).
+   Use a strong floor so large display names (not just body text) stay unreadable. */
+[data-privacy-blur="true"] {
+  filter: blur(max(16px, 0.55em));
+  user-select: none;
+  pointer-events: none;
+}
+
+@media print {
+  [data-privacy-blur="true"] {
+    filter: blur(max(16px, 0.55em)) !important;
+    user-select: none;
+  }
+}
+
 /* Browser print: same geometry as on-screen A4 preview (210mm × 297mm) */
 @media print {
   @page {

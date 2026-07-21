@@ -21,6 +21,7 @@ export function FullscreenA4PreviewButton({
   templateId,
   locale,
   primaryColor,
+  privacyMode = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -28,6 +29,7 @@ export function FullscreenA4PreviewButton({
   templateId: TemplateId;
   locale: string;
   primaryColor: string;
+  privacyMode?: boolean;
 }) {
   return (
     <>
@@ -75,6 +77,7 @@ export function FullscreenA4PreviewButton({
               locale={locale}
               editable={false}
               textEditable={false}
+              privacyMode={privacyMode}
             />
           </div>
         </DialogContent>

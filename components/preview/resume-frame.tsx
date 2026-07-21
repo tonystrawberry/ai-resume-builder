@@ -14,6 +14,7 @@ export function ResumeFrame({
   profileId,
   editable = false,
   textEditable = false,
+  privacyMode = false,
   onMediaChanged,
   onPatch,
 }: {
@@ -23,6 +24,7 @@ export function ResumeFrame({
   profileId?: string;
   editable?: boolean;
   textEditable?: boolean;
+  privacyMode?: boolean;
   onMediaChanged?: () => void;
   onPatch?: ResumePatchFn;
 }) {
@@ -32,6 +34,7 @@ export function ResumeFrame({
     profileId,
     editable,
     textEditable,
+    privacyMode,
     onMediaChanged,
     onPatch,
   };

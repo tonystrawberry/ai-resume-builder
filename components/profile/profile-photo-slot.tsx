@@ -10,12 +10,15 @@ export function ProfilePhotoSlot({
   editable = false,
   onChanged,
   variant = "classic",
+  privacyBlur = false,
 }: {
   profileId?: string;
   initialPhotoUrl?: string;
   editable?: boolean;
   onChanged?: (photoUrl?: string) => void;
   variant?: "classic" | "modern";
+  /** CSS-blur the photo in privacy mode. */
+  privacyBlur?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [photoUrl, setPhotoUrl] = useState(initialPhotoUrl);
@@ -88,7 +91,10 @@ export function ProfilePhotoSlot({
   }
 
   return (
-    <div className={cn("profile-photo-slot relative shrink-0", frameClass)}>
+    <div
+      className={cn("profile-photo-slot relative shrink-0", frameClass)}
+      data-privacy-blur={privacyBlur ? "true" : undefined}
+    >
       {photoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

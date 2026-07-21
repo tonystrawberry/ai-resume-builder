@@ -27,6 +27,7 @@ export function IdentityLinksRow({
   className,
   inputClassName,
   separatorClassName,
+  privacyBlur = false,
 }: {
   links: IdentityLink[] | undefined;
   canEdit: boolean;
@@ -34,6 +35,7 @@ export function IdentityLinksRow({
   className?: string;
   inputClassName?: string;
   separatorClassName?: string;
+  privacyBlur?: boolean;
 }) {
   const items = links ?? [];
 
@@ -87,6 +89,7 @@ export function IdentityLinksRow({
                 emptyLabel="website"
                 placeholder="https://yoursite.com"
                 onCommit={(url) => updateUrl(index, url)}
+                privacyBlur={privacyBlur}
               />
               <PreviewDeleteButton
                 label="Remove website"
@@ -101,6 +104,7 @@ export function IdentityLinksRow({
               href={normalizeWebsiteUrl(link.url) || link.url}
               target="_blank"
               rel="noreferrer"
+              data-privacy-blur={privacyBlur ? "true" : undefined}
               className={cn(
                 "max-w-[14rem] truncate underline-offset-2 hover:underline",
                 className,

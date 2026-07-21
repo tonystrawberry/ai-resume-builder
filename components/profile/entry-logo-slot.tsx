@@ -13,6 +13,7 @@ export function EntryLogoSlot({
   editable = false,
   onChanged,
   className,
+  privacyBlur = false,
 }: {
   profileId?: string;
   section: LogoSection;
@@ -21,6 +22,8 @@ export function EntryLogoSlot({
   editable?: boolean;
   onChanged?: (logoUrl?: string) => void;
   className?: string;
+  /** CSS-blur the logo in privacy mode. */
+  privacyBlur?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
@@ -85,7 +88,10 @@ export function EntryLogoSlot({
   }
 
   return (
-    <div className={cn("entry-logo-slot relative shrink-0", className)}>
+    <div
+      className={cn("entry-logo-slot relative shrink-0", className)}
+      data-privacy-blur={privacyBlur ? "true" : undefined}
+    >
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

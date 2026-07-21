@@ -5,9 +5,12 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
-  type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
+import {
+  PrivacyBlur,
+  PrivacySensitiveText,
+} from "@/components/preview/privacy-blur";
 
 type InlineTextProps = {
   value: string;
@@ -21,6 +24,10 @@ type InlineTextProps = {
   emptyLabel?: string;
   as?: "span" | "p" | "h1" | "h2" | "li";
   onCommit?: (next: string) => void | Promise<void>;
+  /** Blur the entire value (identity fields). */
+  privacyBlur?: boolean;
+  /** Blur matching substrings (project/app names in free text). */
+  sensitiveTerms?: string[];
 };
 
 /**
@@ -38,6 +45,8 @@ export function InlineText({
   emptyLabel,
   as: Tag = "span",
   onCommit,
+  privacyBlur = false,
+  sensitiveTerms,
 }: InlineTextProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -63,13 +72,33 @@ export function InlineText({
     el.setSelectionRange(len, len);
   }, [editing]);
 
+  function renderDisplayValue() {
+    if (privacyBlur) {
+      return (
+        <PrivacyBlur active>
+          {value}
+        </PrivacyBlur>
+      );
+    }
+    if (sensitiveTerms?.length) {
+      return (
+        <PrivacySensitiveText
+          text={value}
+          terms={sensitiveTerms}
+          active
+        />
+      );
+    }
+    return value;
+  }
+
   if (!editable || !onCommit) {
     if (!value) return null;
     return (
       <Tag
         className={cn(className, useMultiline && "whitespace-pre-wrap")}
       >
-        {value}
+        {renderDisplayValue()}
       </Tag>
     );
   }
@@ -197,7 +226,7 @@ export function InlineText({
         }
       }}
     >
-      {display as ReactNode}
+      {isEmpty ? display : renderDisplayValue()}
     </Tag>
   );
 }

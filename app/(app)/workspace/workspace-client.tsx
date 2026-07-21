@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
 import { EnrichmentChat } from "@/components/chat/enrichment-chat";
 import { ResumeFrame } from "@/components/preview/resume-frame";
 import { TemplateSwitcher } from "@/components/preview/template-switcher";
@@ -10,6 +11,7 @@ import { ExportControls } from "@/components/export/export-controls";
 import { FullscreenA4PreviewButton } from "@/components/preview/fullscreen-a4-preview";
 import { StructuredDataEditorButton } from "@/components/preview/structured-data-editor";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { CompletenessRing } from "@/components/preview/completeness-ring";
 import {
   Breadcrumb,
@@ -80,6 +82,7 @@ export function WorkspaceClient({
   const [editError, setEditError] = useState<string | null>(null);
   const [fullscreenPreview, setFullscreenPreview] = useState(false);
   const [dataEditorOpen, setDataEditorOpen] = useState(false);
+  const [hidePersonalInfo, setHidePersonalInfo] = useState(false);
 
   const isSourceLocale = locale === sourceLocale;
   const previewData = isSourceLocale ? sourceData : resumeData;
@@ -405,7 +408,30 @@ export function WorkspaceClient({
                 templateId={templateId}
                 locale={locale}
                 primaryColor={primaryColor}
+                privacyMode={hidePersonalInfo}
               />
+              <Button
+                type="button"
+                size="sm"
+                variant={hidePersonalInfo ? "default" : "outline"}
+                className="gap-1.5 print:hidden"
+                onClick={() => setHidePersonalInfo((v) => !v)}
+                title={
+                  hidePersonalInfo
+                    ? "Show personal info"
+                    : "Hide personal info"
+                }
+                aria-pressed={hidePersonalInfo}
+              >
+                {hidePersonalInfo ? (
+                  <EyeOff className="h-3.5 w-3.5" />
+                ) : (
+                  <Eye className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">
+                  {hidePersonalInfo ? "Hidden" : "Hide personal"}
+                </span>
+              </Button>
               <ExportControls
                 profileId={profileId}
                 locale={locale}
@@ -413,6 +439,7 @@ export function WorkspaceClient({
                 hasCriticalGaps={completeness.gaps.some(
                   (g) => g.severity === "critical",
                 )}
+                hidePersonalInfo={hidePersonalInfo}
               />
             </div>
           </div>
@@ -427,6 +454,7 @@ export function WorkspaceClient({
               profileId={profileId}
               editable
               textEditable={textEditable}
+              privacyMode={hidePersonalInfo}
               onMediaChanged={() => void refreshProfile()}
               onPatch={(patch) => saveDirectPatch(patch)}
             />

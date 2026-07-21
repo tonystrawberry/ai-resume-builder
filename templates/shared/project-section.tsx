@@ -29,6 +29,8 @@ export function ProjectSection({
   profileId,
   editable = false,
   textEditable = false,
+  privacyMode = false,
+  sensitiveTerms = [],
   onPatch,
   onMediaChanged,
 }: {
@@ -37,6 +39,8 @@ export function ProjectSection({
   /** Photo / logo uploads */
   editable?: boolean;
   textEditable?: boolean;
+  privacyMode?: boolean;
+  sensitiveTerms?: string[];
   onPatch?: ResumePatchFn;
   onMediaChanged?: () => void;
 }) {
@@ -72,6 +76,7 @@ export function ProjectSection({
                   itemId={p.id}
                   initialLogoUrl={p.logoUrl}
                   editable={editable}
+                  privacyBlur={privacyMode}
                   onChanged={() => onMediaChanged?.()}
                   className="mt-0.5"
                 />
@@ -82,6 +87,7 @@ export function ProjectSection({
                     value={p.name}
                     editable={textEditable}
                     placeholder="Project name"
+                    privacyBlur={privacyMode}
                     onCommit={(name) =>
                       onPatch?.({
                         projects: [{ ...p, name, provenance: "user" }],
@@ -96,6 +102,7 @@ export function ProjectSection({
                       editable={textEditable}
                       emptyLabel="+ add link"
                       placeholder="https://…"
+                      privacyBlur={privacyMode}
                       onCommit={(url) =>
                         onPatch?.({
                           projects: [
@@ -117,6 +124,7 @@ export function ProjectSection({
                     editable={textEditable}
                     emptyLabel="Add a description"
                     placeholder="Description"
+                    sensitiveTerms={sensitiveTerms}
                     onCommit={(description) =>
                       onPatch?.({
                         projects: [
@@ -161,6 +169,7 @@ export function ProjectSection({
                               editable={textEditable}
                               className="min-w-0 flex-1"
                               placeholder="Highlight"
+                              sensitiveTerms={sensitiveTerms}
                               onCommit={(next) => {
                                 const highlights = [...p.highlights];
                                 if (!next.trim()) highlights.splice(i, 1);

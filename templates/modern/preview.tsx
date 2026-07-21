@@ -5,6 +5,7 @@ import {
   deleteItemMarker,
   deleteItemsMarkers,
 } from "@/lib/resume/schema";
+import { collectSensitiveTerms } from "@/lib/resume/privacy";
 import { EntryLogoSlot } from "@/components/profile/entry-logo-slot";
 import { ProfilePhotoSlot } from "@/components/profile/profile-photo-slot";
 import { InlineText } from "@/components/preview/inline-text";
@@ -24,10 +25,13 @@ export function ModernPreview({
   profileId,
   editable = false,
   textEditable = false,
+  privacyMode = false,
   onMediaChanged,
   onPatch,
 }: ResumePreviewProps) {
-  const canEdit = Boolean(textEditable && onPatch);
+  const canEdit = Boolean(textEditable && onPatch && !privacyMode);
+  const mediaEditable = Boolean(editable && !privacyMode);
+  const sensitiveTerms = privacyMode ? collectSensitiveTerms(data) : [];
   const t = (section: Parameters<typeof sectionLabel>[0]) =>
     sectionLabel(section, locale);
 
@@ -40,8 +44,9 @@ export function ModernPreview({
         <ProfilePhotoSlot
           profileId={profileId}
           initialPhotoUrl={data.identity.photoUrl}
-          editable={editable}
+          editable={mediaEditable}
           variant="modern"
+          privacyBlur={privacyMode}
           onChanged={() => onMediaChanged?.()}
         />
         <div className="min-w-0 flex-1 space-y-1">
@@ -52,6 +57,7 @@ export function ModernPreview({
             value={data.identity.fullName}
             editable={canEdit}
             placeholder="Your name"
+            privacyBlur={privacyMode}
             onCommit={(fullName) =>
               onPatch?.({ identity: { ...data.identity, fullName } })
             }
@@ -80,6 +86,7 @@ export function ModernPreview({
               emptyLabel="email"
               inputClassName="text-sm text-foreground"
               placeholder="email@example.com"
+              privacyBlur={privacyMode}
               onCommit={(email) =>
                 onPatch?.({
                   identity: { ...data.identity, email: email || undefined },
@@ -93,6 +100,7 @@ export function ModernPreview({
               emptyLabel="location"
               inputClassName="text-sm text-foreground"
               placeholder="City, Country"
+              privacyBlur={privacyMode}
               onCommit={(location) =>
                 onPatch?.({
                   identity: {
@@ -105,6 +113,7 @@ export function ModernPreview({
             <IdentityLinksRow
               links={data.identity.links}
               canEdit={canEdit}
+              privacyBlur={privacyMode}
               inputClassName="text-sm text-foreground"
               separatorClassName="opacity-50"
               onChange={(links) =>
@@ -168,7 +177,8 @@ export function ModernPreview({
                       section="education"
                       itemId={ed.id}
                       initialLogoUrl={ed.logoUrl}
-                      editable={editable}
+                      editable={mediaEditable}
+                      privacyBlur={privacyMode}
                       onChanged={() => onMediaChanged?.()}
                     />
                     <div className="min-w-0">
@@ -178,6 +188,7 @@ export function ModernPreview({
                         value={ed.institution}
                         editable={canEdit}
                         placeholder="School"
+                        privacyBlur={privacyMode}
                         onCommit={(institution) =>
                           onPatch?.({
                             education: [
@@ -319,7 +330,7 @@ export function ModernPreview({
                         section="certifications"
                         itemId={c.id}
                         initialLogoUrl={c.logoUrl}
-                        editable={editable}
+                        editable={mediaEditable}
                         onChanged={() => onMediaChanged?.()}
                       />
                       <div className="min-w-0">
@@ -413,6 +424,7 @@ export function ModernPreview({
                       value={r.name}
                       editable={canEdit}
                       placeholder="Name"
+                      privacyBlur={privacyMode}
                       onCommit={(name) =>
                         onPatch?.({
                           references: [{ ...r, name, provenance: "user" }],
@@ -443,6 +455,7 @@ export function ModernPreview({
                         editable={canEdit}
                         emptyLabel="company"
                         placeholder="Company"
+                        privacyBlur={privacyMode}
                         onCommit={(company) =>
                           onPatch?.({
                             references: [
@@ -463,6 +476,7 @@ export function ModernPreview({
                       editable={canEdit}
                       emptyLabel="email"
                       placeholder="email"
+                      privacyBlur={privacyMode}
                       onCommit={(email) =>
                         onPatch?.({
                           references: [
@@ -587,6 +601,7 @@ export function ModernPreview({
                 editable={canEdit}
                 emptyLabel="Add a short professional summary"
                 placeholder="Write a concise summary…"
+                sensitiveTerms={sensitiveTerms}
                 onCommit={(summary) => onPatch?.({ summary })}
               />
             </section>
@@ -618,7 +633,8 @@ export function ModernPreview({
                     section="experience"
                     itemId={exp.id}
                     initialLogoUrl={exp.logoUrl}
-                    editable={editable}
+                    editable={mediaEditable}
+                    privacyBlur={privacyMode}
                     onChanged={() => onMediaChanged?.()}
                     className="mt-0.5"
                   />
@@ -641,6 +657,7 @@ export function ModernPreview({
                         value={exp.company}
                         editable={canEdit}
                         placeholder="Company"
+                        privacyBlur={privacyMode}
                         onCommit={(company) =>
                           onPatch?.({
                             experience: [
@@ -727,6 +744,7 @@ export function ModernPreview({
                               editable={canEdit}
                               className="min-w-0 flex-1"
                               placeholder="Bullet"
+                              sensitiveTerms={sensitiveTerms}
                               onCommit={(next) => {
                                 const bullets = [...exp.bullets];
                                 if (!next.trim()) bullets.splice(i, 1);
@@ -779,8 +797,10 @@ export function ModernPreview({
                 <ProjectSection
                   projects={data.projects}
                   profileId={profileId}
-                  editable={editable}
+                  editable={mediaEditable}
                   textEditable={canEdit}
+                  privacyMode={privacyMode}
+                  sensitiveTerms={sensitiveTerms}
                   onPatch={onPatch}
                   onMediaChanged={onMediaChanged}
                 />

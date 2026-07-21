@@ -9,6 +9,7 @@ import { prisma } from "@/lib/db";
 import { ExportFormat } from "@prisma/client";
 import { masterResumeSchema } from "@/lib/resume/schema";
 import { hasCriticalGaps } from "@/lib/resume/completeness";
+import { redactMasterResumeForExport } from "@/lib/resume/privacy";
 import { getOwnedProfile } from "@/lib/etl/persist";
 import { renderClassicalDocx } from "@/lib/docx/classical";
 
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
     profileId?: string;
     locale?: string;
     acknowledgeIncomplete?: boolean;
+    hidePersonalInfo?: boolean;
   };
 
   if (!body.profileId) return badRequest("profileId is required");
@@ -48,7 +50,11 @@ export async function POST(req: Request) {
     );
   }
 
-  const buffer = await renderClassicalDocx(data, locale);
+  const exportData = body.hidePersonalInfo
+    ? redactMasterResumeForExport(data)
+    : data;
+
+  const buffer = await renderClassicalDocx(exportData, locale);
 
   try {
     await prisma.exportArtifact.create({
@@ -65,7 +71,9 @@ export async function POST(req: Request) {
     console.warn("[export/docx] exportArtifact create skipped:", err);
   }
 
-  const safeName = (data.identity.fullName || "resume")
+  const safeName = (
+    body.hidePersonalInfo ? "resume" : data.identity.fullName || "resume"
+  )
     .replace(/[^\w\- ]+/g, "")
     .trim()
     .replace(/\s+/g, "-")
